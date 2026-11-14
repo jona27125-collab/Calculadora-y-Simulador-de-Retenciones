@@ -10,7 +10,7 @@ st.set_page_config(
 )
 
 # --- CRÉDITO OBLIGATORIO ---
-DEVELOPER_NAME = "Estefania Remache"
+DEVELOPER_NAME = "Estefany Remache"
 
 # Estilo visual personalizado (CSS limpio)
 st.markdown(
