@@ -1,6 +1,5 @@
 import html
 import streamlit as st
-import streamlit.components.v1 as components
 
 # ------------------------------------------------------------
 # CONFIGURACIÓN DE LA PÁGINA
