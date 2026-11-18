@@ -2,13 +2,11 @@ import html
 import streamlit as st
 import streamlit.components.v1 as components
 
-# ============================================================
-# RED NEURONAL TRIBUTARIA
-# Interfaz visual original para IVA e Impuesto a la Renta
-# ============================================================
-
+# ------------------------------------------------------------
+# CONFIGURACIÓN DE LA PÁGINA
+# ------------------------------------------------------------
 st.set_page_config(
-    page_title="Red Neuronal Tributaria",
+    page_title="Red Neuronal Tributaria - LRTI y SRI",
     page_icon="🧠",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -16,392 +14,276 @@ st.set_page_config(
 
 DEVELOPER_NAME = "Jonathan Toasa"
 
-# --------------------------- ESTILOS -------------------------
+# ------------------------------------------------------------
+# ESTILOS CSS
+# ------------------------------------------------------------
 st.markdown("""
 <style>
     .stApp {
-        background:
-            radial-gradient(circle at 50% 0%, rgba(34, 76, 145, .20), transparent 38%),
-            #080e1c;
-        color: #eaf1ff;
+        background: #090e1c;
+        color: #e8eefc;
     }
     [data-testid="stSidebar"] {
-        background: #101a2d;
-        border-right: 1px solid rgba(117, 151, 211, .18);
+        background: #0f172a;
+        border-right: 1px solid rgba(148, 163, 184, .16);
     }
     [data-testid="stSidebar"] h1,
     [data-testid="stSidebar"] h2,
     [data-testid="stSidebar"] h3 {
-        color: #edf3ff;
+        color: #eaf0ff;
     }
-    .hero {
-        display:flex;
-        justify-content:space-between;
-        align-items:center;
-        gap:18px;
-        flex-wrap:wrap;
-        padding: 8px 2px 16px 2px;
+    .main-title {
+        color: #f3f6ff;
+        font-size: clamp(1.55rem, 2.8vw, 2.3rem);
+        font-weight: 800;
+        line-height: 1.15;
+        margin: 0;
     }
-    .hero-title {
-        font-size:clamp(1.7rem, 3vw, 2.55rem);
-        line-height:1.12;
-        font-weight:850;
-        letter-spacing:-.7px;
-        margin:0;
-        color:#f4f7ff;
+    .sub-title {
+        color: #94a3b8;
+        font-size: 0.98rem;
+        margin-top: 6px;
+        margin-bottom: 0;
     }
-    .hero-sub {
-        color:#9fb2d5;
-        font-size:1rem;
-        margin-top:9px;
-        max-width:720px;
+    .author {
+        color: #cbd5e1;
+        text-align: right;
+        font-size: .85rem;
+        line-height: 1.5;
     }
-    .hero-meta {
-        color:#9fb2d5;
-        font-size:.82rem;
-        text-align:right;
-        line-height:1.6;
+    .top-rule {
+        height: 4px;
+        border-radius: 10px;
+        background: linear-gradient(90deg, #3b82f6, #8b5cf6, #10b981, #f59e0b);
+        margin: 16px 0 18px 0;
     }
-    .neon-rule {
-        height:3px;
-        border-radius:9px;
-        background:linear-gradient(90deg,#3985ff,#9a5cff,#18d5bd,#ff9b45);
-        box-shadow:0 0 16px rgba(74,125,255,.28);
-        margin:8px 0 20px;
+    .info-card {
+        background: #131c31;
+        border: 1px solid rgba(148, 163, 184, .18);
+        border-radius: 12px;
+        padding: 16px;
+        height: 100%;
     }
-    .section-label {
-        color:#91a6ca;
-        font-size:.72rem;
-        font-weight:800;
-        letter-spacing:1.4px;
-        text-transform:uppercase;
-        margin: 4px 0 10px;
+    .info-card h4 {
+        color: #38bdf8;
+        margin-top: 0;
+        margin-bottom: 8px;
+        font-size: 1.05rem;
     }
-    .metric-grid {
-        display:grid;
-        grid-template-columns:repeat(4,minmax(0,1fr));
-        gap:12px;
-        margin-top:16px;
+    .info-card p, .info-card li {
+        color: #cbd5e1;
+        font-size: 0.9rem;
+        line-height: 1.45;
     }
-    .metric-card {
-        background:linear-gradient(145deg,#14223a,#101a2d);
-        border:1px solid rgba(126,157,207,.20);
-        border-radius:13px;
-        padding:14px 16px;
-        box-shadow:0 8px 24px rgba(0,0,0,.13);
+    .result-strip {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px;
+        margin-top: 12px;
+        margin-bottom: 18px;
     }
-    .metric-name {
-        color:#91a6ca;
-        font-size:.72rem;
-        font-weight:750;
-        text-transform:uppercase;
-        letter-spacing:.7px;
+    .result-box {
+        background: #131c31;
+        border: 1px solid rgba(148,163,184,.22);
+        border-radius: 11px;
+        padding: 14px;
     }
-    .metric-number {
-        color:#f3f7ff;
-        font-size:1.35rem;
-        font-weight:850;
-        margin-top:5px;
+    .result-label {
+        color: #94a3b8;
+        font-size: .75rem;
+        text-transform: uppercase;
+        font-weight: 700;
+        letter-spacing: .5px;
     }
-    .hint {
-        color:#8296b9;
-        font-size:.8rem;
-        margin-top:12px;
+    .result-value {
+        color: #f8fafc;
+        font-size: 1.25rem;
+        font-weight: 800;
+        margin-top: 4px;
     }
-    div[data-testid="stNumberInput"] input,
-    div[data-testid="stSelectbox"] div[data-baseweb="select"] {
-        background:#17243a;
+    .footnote {
+        color: #64748b;
+        text-align: center;
+        font-size: .78rem;
+        margin-top: 22px;
     }
-    @media(max-width:850px) {
-        .metric-grid {grid-template-columns:repeat(2,minmax(0,1fr));}
+    @media (max-width: 750px) {
+        .result-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
 </style>
 """, unsafe_allow_html=True)
 
-# ---------------------- PANEL DE ENTRADA ---------------------
-st.sidebar.markdown("## ⚙️ Centro de control")
-st.sidebar.caption("Introduce los datos para activar el procesamiento de la red.")
-st.sidebar.markdown("---")
-st.sidebar.markdown("### 01 · Datos del IVA")
-
-ventas_mes = st.sidebar.number_input(
-    "Ventas del mes (USD sin IVA)", min_value=0.0, value=0.0, step=100.0
-)
-compras_mes = st.sidebar.number_input(
-    "Compras del mes (USD sin IVA)", min_value=0.0, value=0.0, step=100.0
-)
-tipo_tarifa = st.sidebar.selectbox(
-    "Tarifa IVA aplicable",
-    [15.0, 5.0, 0.0],
-    index=0,
-    format_func=lambda x: f"{x:g} %",
-)
-retenciones_recibidas = st.sidebar.number_input(
-    "Retenciones recibidas (USD)", min_value=0.0, value=0.0, step=10.0
+# ------------------------------------------------------------
+# PANEL DE CONTROL INTERACTIVO (SIDEBAR)
+# ------------------------------------------------------------
+st.sidebar.markdown("## 🧠 Centro de Control LRTI")
+modulo = st.sidebar.radio(
+    "Selecciona el impuesto a procesar en la red:",
+    [
+        "🔵 Impuesto al Valor Agregado (IVA)",
+        "🟣 Impuesto a la Renta (IR)",
+    ],
 )
 
 st.sidebar.markdown("---")
-st.sidebar.markdown("### 02 · Datos del Impuesto a la Renta")
 
-ingresos_anual = st.sidebar.number_input(
-    "Ingresos del año (USD)", min_value=0.0, value=0.0, step=1000.0
-)
-costos_anual = st.sidebar.number_input(
-    "Costos y gastos deducibles (USD)", min_value=0.0, value=0.0, step=1000.0
-)
+if "IVA" in modulo:
+    st.sidebar.markdown("### 📥 Parámetros IVA (Título II LRTI)")
+    escenario_iva = st.sidebar.selectbox(
+        "Cargar caso rápido:",
+        [
+            "Tarifa General (15%)",
+            "Servicios Turísticos Feriado (8%)",
+            "Construcción Vivienda Social (5%)",
+            "Bienes de Primera Necesidad (0%)",
+        ],
+    )
+    tarifa_map = {
+        "Tarifa General (15%)": 15.0,
+        "Servicios Turísticos Feriado (8%)": 8.0,
+        "Construcción Vivienda Social (5%)": 5.0,
+        "Bienes de Primera Necesidad (0%)": 0.0,
+    }
+    tarifa_default = tarifa_map[escenario_iva]
 
-st.sidebar.markdown("---")
-st.sidebar.caption("Los resultados y el diagrama se actualizan al cambiar los valores.")
+    ventas_mes = st.sidebar.number_input(
+        "Ventas gravadas del mes (USD sin IVA)", min_value=0.0, value=12000.0, step=500.0
+    )
+    compras_mes = st.sidebar.number_input(
+        "Compras con derecho a crédito (USD sin IVA)", min_value=0.0, value=7500.0, step=500.0
+    )
+    tarifa_iva = st.sidebar.selectbox(
+        "Tarifa IVA vigente (Art. 65 LRTI)",
+        [15.0, 8.0, 5.0, 0.0],
+        index=[15.0, 8.0, 5.0, 0.0].index(tarifa_default),
+        format_func=lambda x: f"{x:g} %",
+    )
+    ret_iva = st.sidebar.number_input(
+        "Retenciones de IVA recibidas (USD)", min_value=0.0, value=360.0, step=50.0
+    )
+    noveno_digito = st.sidebar.slider("9.° dígito del RUC (Plazo SRI)", 1, 9, 4)
 
-# --------------------------- CÁLCULOS ------------------------
-# Se mantienen las fórmulas del código original proporcionado.
-iva_en_ventas = ventas_mes * (tipo_tarifa / 100.0)
-credito_tributario = compras_mes * (tipo_tarifa / 100.0)
-iva_retenido = retenciones_recibidas * 0.07
-iva_pagar_calc = iva_en_ventas - credito_tributario - iva_retenido
-iva_a_pagar = max(0.0, iva_pagar_calc)
-iva_a_favor = abs(min(0.0, iva_pagar_calc))
+    # Cálculos IVA según LRTI
+    iva_ventas = ventas_mes * (tarifa_iva / 100.0)
+    credito_tributario = compras_mes * (tarifa_iva / 100.0)
+    saldo_iva = iva_ventas - credito_tributario - ret_iva
+    iva_pagar = max(0.0, saldo_iva)
+    credito_favor = abs(min(0.0, saldo_iva))
+    dia_vencimiento = 10 + (noveno_digito - 1) * 2
 
-base_imponible_renta = max(0.0, ingresos_anual - costos_anual)
-impuesto_causado_renta = base_imponible_renta * 0.25
-renta_retenida = retenciones_recibidas * 0.9
-renta_a_pagar = max(0.0, impuesto_causado_renta - renta_retenida)
-
-def fmt(n):
-    return f"${n:,.2f}"
-
-def safe(s):
-    return html.escape(str(s))
-
-# ----------------------- RED NEURONAL SVG --------------------
-# Diagrama de flujo con nodos luminosos y enlaces curvos.
-# Las posiciones forman una red orgánica, no cuatro tarjetas.
-W, H = 1440, 790
-svg = [f"""
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {W} {H}" width="100%"
-     role="img" aria-label="Red neuronal interactiva del proceso tributario">
-<defs>
-  <linearGradient id="lineGrad" x1="0" x2="1">
-    <stop offset="0%" stop-color="#438cff"/>
-    <stop offset="52%" stop-color="#a46aff"/>
-    <stop offset="100%" stop-color="#1bd5bd"/>
-  </linearGradient>
-  <radialGradient id="core">
-    <stop offset="0%" stop-color="#243c67"/>
-    <stop offset="100%" stop-color="#101a2e"/>
-  </radialGradient>
-  <filter id="softGlow" x="-80%" y="-80%" width="260%" height="260%">
-    <feGaussianBlur stdDeviation="5" result="blur"/>
-    <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-  </filter>
-</defs>
-<rect width="1440" height="790" rx="22" fill="#0a1427"/>
-<g opacity=".18" stroke="#7894c5" stroke-width="1">
-"""]
-
-# Retícula técnica sutil.
-for x in range(40, W, 40):
-    svg.append(f'<path d="M{x} 0 V790"/>')
-for y in range(30, H, 40):
-    svg.append(f'<path d="M0 {y} H1440"/>')
-svg.append('</g>')
-
-# Cabeceras de las cuatro zonas de procesamiento.
-zones = [
-    (42,  "ENTRADA", "Datos ingresados", "#438cff"),
-    (405, "ANÁLISIS", "Clasificación tributaria", "#b06cff"),
-    (770, "PROCESAMIENTO", "Operaciones y cálculos", "#18cdb8"),
-    (1135,"RESULTADOS", "Salida del sistema", "#ff9a54"),
-]
-for x, title, sub, color in zones:
-    svg.append(f'<circle cx="{x+7}" cy="48" r="5" fill="{color}"/>')
-    svg.append(f'<text x="{x+20}" y="52" fill="{color}" font-size="13" '
-               f'font-weight="800" letter-spacing="1.5">{title}</text>')
-    svg.append(f'<text x="{x+20}" y="70" fill="#8298bd" font-size="10">{sub}</text>')
-
-# Coordenadas de los nodos por etapa.
-input_nodes = [
-    (105, 165, "VENTAS", fmt(ventas_mes), "IVA"),
-    (105, 300, "COMPRAS", fmt(compras_mes), "IVA"),
-    (105, 435, "TARIFA", f"{tipo_tarifa:g} %", "SELECCIÓN"),
-    (105, 570, "RETENCIONES", fmt(retenciones_recibidas), "RECIBIDAS"),
-    (105, 690, "INGRESOS / COSTOS", fmt(ingresos_anual), "RENTA"),
-]
-analysis_nodes = [
-    (470, 205, "HECHO GENERADOR", "IVA", "REGLA"),
-    (470, 390, "TARIFA APLICABLE", f"{tipo_tarifa:g} %", "CLASIFICACIÓN"),
-    (470, 575, "BASE DE ANÁLISIS", "DATOS", "VALIDACIÓN"),
-]
-process_nodes = [
-    (835, 165, "IVA EN VENTAS", fmt(iva_en_ventas), "VENTAS × TARIFA"),
-    (835, 315, "CRÉDITO TRIBUTARIO", fmt(credito_tributario), "COMPRAS × TARIFA"),
-    (835, 465, "IVA RETENIDO", fmt(iva_retenido), "RETENCIONES × 7 %"),
-    (835, 635, "BASE IMPONIBLE", fmt(base_imponible_renta), "INGRESOS − COSTOS"),
-]
-output_nodes = [
-    (1195, 205, "IVA A PAGAR", fmt(iva_a_pagar), "RESULTADO IVA"),
-    (1195, 390, "CRÉDITO A FAVOR", fmt(iva_a_favor), "SALDO IVA"),
-    (1195, 575, "RENTA A PAGAR", fmt(renta_a_pagar), "RESULTADO RENTA"),
-]
-all_nodes = [input_nodes, analysis_nodes, process_nodes, output_nodes]
-
-# Conexiones de cada grupo hacia el siguiente con curvas Bezier.
-def connect_groups(left, right, color, opacity=.56):
-    for lx, ly, *_ in left:
-        for rx, ry, *_ in right:
-            mid = (lx + rx) / 2
-            svg.append(
-                f'<path d="M{lx+31} {ly} C{mid} {ly}, {mid} {ry}, {rx-39} {ry}" '
-                f'fill="none" stroke="{color}" stroke-width="1.35" '
-                f'opacity="{opacity}"/>'
-            )
-
-connect_groups(input_nodes, analysis_nodes, "#638fe8", .24)
-connect_groups(analysis_nodes, process_nodes, "#a66be8", .36)
-connect_groups(process_nodes, output_nodes, "#23cbb8", .38)
-
-# Unas conexiones destacadas para dar sensación de flujo.
-highlight_links = [
-    (136,165,431,205,"#438cff"), (136,300,431,390,"#438cff"),
-    (136,435,431,390,"#438cff"), (136,570,431,575,"#438cff"),
-    (501,205,796,165,"#b06cff"), (501,390,796,315,"#b06cff"),
-    (501,575,796,635,"#b06cff"), (866,165,1156,205,"#18cdb8"),
-    (866,315,1156,205,"#18cdb8"), (866,465,1156,205,"#18cdb8"),
-    (866,635,1156,575,"#18cdb8"),
-]
-for x1,y1,x2,y2,color in highlight_links:
-    mid=(x1+x2)/2
-    svg.append(
-        f'<path d="M{x1} {y1} C{mid} {y1-18}, {mid} {y2+18}, {x2} {y2}" '
-        f'fill="none" stroke="{color}" stroke-width="2.4" '
-        f'stroke-dasharray="6 7" opacity=".95"/>'
+else:
+    st.sidebar.markdown("### 📥 Parámetros Renta (Título I LRTI)")
+    tipo_sujeto = st.sidebar.selectbox(
+        "Sujeto Pasivo (Art. 4 LRTI):",
+        [
+            "Sociedad (Tarifa General 25%)",
+            "Persona Natural (Tabla Progresiva 0% - 37%)",
+            "RIMPE Emprendedor (1% - 2%)",
+        ],
+    )
+    ingresos_anuales = st.sidebar.number_input(
+        "Ingresos gravados anuales (USD)", min_value=0.0, value=150000.0, step=5000.0
+    )
+    gastos_deducibles = st.sidebar.number_input(
+        "Costos y gastos deducibles (Art. 10 LRTI)", min_value=0.0, value=95000.0, step=5000.0
+    )
+    ret_renta = st.sidebar.number_input(
+        "Retenciones en la fuente recibidas (USD)", min_value=0.0, value=2500.0, step=100.0
+    )
+    cargas_familiares = st.sidebar.slider(
+        "Cargas familiares (Persona Natural)", 0, 5, 0
     )
 
-# Nodos: núcleo, anillo luminoso, texto y etiqueta de dato.
-def draw_node(x, y, title, value, subtitle, color, radius=30):
-    value_short = safe(value)
-    title_short = safe(title)
-    sub_short = safe(subtitle)
-    svg.append(f'<circle cx="{x}" cy="{y}" r="{radius+10}" fill="{color}" opacity=".08"/>')
-    svg.append(f'<circle cx="{x}" cy="{y}" r="{radius+4}" fill="none" '
-               f'stroke="{color}" stroke-opacity=".55" stroke-width="1.3"/>')
-    svg.append(f'<circle cx="{x}" cy="{y}" r="{radius}" fill="url(#core)" '
-               f'stroke="{color}" stroke-width="2.2" filter="url(#softGlow)"/>')
-    # Punto central tipo circuito.
-    svg.append(f'<circle cx="{x}" cy="{y-5}" r="4" fill="{color}" opacity=".95"/>')
-    svg.append(f'<text x="{x}" y="{y+10}" fill="#f4f7ff" font-size="8.5" '
-               f'font-weight="800" text-anchor="middle">{title_short}</text>')
-    # Etiqueta de valor superior.
-    pill_w = min(150, max(72, len(value_short)*7+20))
-    svg.append(f'<rect x="{x-pill_w/2}" y="{y-radius-27}" width="{pill_w}" '
-               f'height="19" rx="9.5" fill="{color}" opacity=".98"/>')
-    svg.append(f'<text x="{x}" y="{y-radius-14}" fill="#07111f" '
-               f'font-size="10" font-weight="850" text-anchor="middle">{value_short}</text>')
-    svg.append(f'<text x="{x}" y="{y+radius+17}" fill="#91a5c8" '
-               f'font-size="9" text-anchor="middle">{sub_short}</text>')
+    # Cálculos Impuesto a la Renta según LRTI
+    base_imponible = max(0.0, ingresos_anuales - gastos_deducibles)
 
-for item in input_nodes:
-    draw_node(*item, "#438cff", 27)
-for item in analysis_nodes:
-    draw_node(*item, "#b06cff", 32)
-for item in process_nodes:
-    draw_node(*item, "#18cdb8", 32)
-for item in output_nodes:
-    draw_node(*item, "#ff9a54", 34)
+    if "Sociedad" in tipo_sujeto:
+        tarifa_ir_texto = "25 % (Art. 37)"
+        impuesto_causado = base_imponible * 0.25
+        rebaja_gp = 0.0
+        plazo_ir = "ABRIL (Sociedades)"
+    elif "Persona Natural" in tipo_sujeto:
+        tarifa_ir_texto = "0% a 37% (Art. 36)"
+        # Cálculo simplificado de tabla progresiva referencial
+        if base_imponible <= 11902:
+            impuesto_causado = 0.0
+        elif base_imponible <= 15159:
+            impuesto_causado = (base_imponible - 11902) * 0.05
+        elif base_imponible <= 19682:
+            impuesto_causado = 163 + (base_imponible - 15159) * 0.10
+        elif base_imponible <= 26031:
+            impuesto_causado = 615 + (base_imponible - 19682) * 0.12
+        elif base_imponible <= 34255:
+            impuesto_causado = 1377 + (base_imponible - 26031) * 0.15
+        elif base_imponible <= 45407:
+            impuesto_causado = 2611 + (base_imponible - 34255) * 0.20
+        elif base_imponible <= 60450:
+            impuesto_causado = 4841 + (base_imponible - 45407) * 0.25
+        elif base_imponible <= 80605:
+            impuesto_causado = 8602 + (base_imponible - 60450) * 0.30
+        elif base_imponible <= 107199:
+            impuesto_causado = 14648 + (base_imponible - 80605) * 0.35
+        else:
+            impuesto_causado = 23956 + (base_imponible - 107199) * 0.37
 
-# Núcleo visual decorativo entre etapas, sin alterar cálculos.
-svg.append("""
-<g opacity=".95">
-  <circle cx="652" cy="390" r="57" fill="#101d35" stroke="#6d79ff"
-          stroke-width="1.5" stroke-dasharray="4 7"/>
-  <circle cx="652" cy="390" r="42" fill="#19294a" stroke="#8b74ff"
-          stroke-width="1.5" filter="url(#softGlow)"/>
-  <circle cx="652" cy="390" r="24" fill="#253d68" stroke="#b18aff" stroke-width="1.5"/>
-  <text x="652" y="387" fill="#ffffff" text-anchor="middle"
-        font-size="19" font-weight="900">RN</text>
-  <text x="652" y="402" fill="#b9c9ec" text-anchor="middle"
-        font-size="8" font-weight="700">CORE</text>
-  <text x="652" y="468" fill="#a9b8d6" text-anchor="middle"
-        font-size="10" font-weight="800">NÚCLEO</text>
-  <text x="652" y="482" fill="#7489ad" text-anchor="middle"
-        font-size="9">de procesamiento</text>
-</g>
-""")
+        # Rebaja gastos personales (18% según cargas)
+        tope_cargas = [7, 9, 11, 14, 17, 20][cargas_familiares] * 795.0
+        rebaja_gp = min(impuesto_causado, tope_cargas * 0.18)
+        plazo_ir = "MARZO (P. Naturales)"
+    else:
+        tarifa_ir_texto = "1% - 2% RIMPE"
+        base_imponible = ingresos_anuales  # RIMPE grava ingresos brutos
+        impuesto_causado = ingresos_anuales * 0.015
+        rebaja_gp = 0.0
+        plazo_ir = "MARZO / ABRIL"
 
-# Leyenda inferior.
-legend = [
-    (390, "ENTRADAS", "#438cff"),
-    (560, "ANÁLISIS", "#b06cff"),
-    (720, "CÁLCULOS", "#18cdb8"),
-    (900, "SALIDAS", "#ff9a54"),
-]
-for x, label, color in legend:
-    svg.append(f'<circle cx="{x}" cy="755" r="5" fill="{color}"/>')
-    svg.append(f'<text x="{x+12}" y="759" fill="#91a5c8" font-size="10" '
-               f'font-weight="700">{label}</text>')
+    ir_pagar = max(0.0, impuesto_causado - rebaja_gp - ret_renta)
+    saldo_favor_ir = abs(min(0.0, impuesto_causado - rebaja_gp - ret_renta))
 
-svg.append("</svg>")
-diagram = "".join(svg)
 
-# ---------------------------- ENCABEZADO ---------------------
-st.markdown(
-    f"""
-    <div class="hero">
-      <div>
-        <p class="hero-title">🧠 Red Neuronal Tributaria</p>
-        <p class="hero-sub">Un sistema visual que transforma los datos financieros
-        en un recorrido de análisis, procesamiento y resultados de IVA e Impuesto a la Renta.</p>
-      </div>
-      <div class="hero-meta"><b>{safe(DEVELOPER_NAME)}</b><br>
-      Modelo interactivo · Ecuador</div>
-    </div>
-    <div class="neon-rule"></div>
-    """,
-    unsafe_allow_html=True,
-)
+# ------------------------------------------------------------
+# FUNCIONES PARA CONSTRUIR EL SVG NEURONAL CON NÚCLEO LRTI
+# ------------------------------------------------------------
+def money(val):
+    return f"${val:,.2f}"
 
-st.markdown('<div class="section-label">Mapa de procesamiento neuronal · Flujo de datos en tiempo real</div>',
-            unsafe_allow_html=True)
+def svg_text(x, y, text, size=11, color="#eaf0ff", weight="600", anchor="middle"):
+    return (
+        f'<text x="{x}" y="{y}" text-anchor="{anchor}" '
+        f'font-family="Inter,Segoe UI,Arial,sans-serif" font-size="{size}" '
+        f'font-weight="{weight}" fill="{color}">{html.escape(str(text))}</text>'
+    )
 
-components.html(
-    f"""
-    <div style="width:100%; overflow-x:auto; background:#0a1427; border-radius:22px;
-                border:1px solid rgba(112,145,202,.20);">
-      {diagram}
-    </div>
-    """,
-    height=805,
-    scrolling=False,
-)
+def draw_node(x, y, title, pill_val, color, subtitle="", radius=27):
+    parts = [
+        f'<circle cx="{x}" cy="{y}" r="{radius+6}" fill="{color}" opacity=".12"/>',
+        f'<circle cx="{x}" cy="{y}" r="{radius}" fill="#131e36" stroke="{color}" stroke-width="2.4"/>',
+    ]
+    lines = title.split("|")
+    start_y = y - (len(lines) - 1) * 5
+    for i, line in enumerate(lines):
+        parts.append(svg_text(x, start_y + i * 10 + 3, line, 8.3, "#ffffff", "800"))
 
-# ------------------------- RESULTADOS ------------------------
-st.markdown("### 📊 Panel de resultados")
-st.markdown(
-    f"""
-    <div class="metric-grid">
-      <div class="metric-card">
-        <div class="metric-name">IVA a pagar</div>
-        <div class="metric-number">{fmt(iva_a_pagar)}</div>
-      </div>
-      <div class="metric-card">
-        <div class="metric-name">Crédito a favor</div>
-        <div class="metric-number">{fmt(iva_a_favor)}</div>
-      </div>
-      <div class="metric-card">
-        <div class="metric-name">Renta a pagar</div>
-        <div class="metric-number">{fmt(renta_a_pagar)}</div>
-      </div>
-      <div class="metric-card">
-        <div class="metric-name">Base imponible de renta</div>
-        <div class="metric-number">{fmt(base_imponible_renta)}</div>
-      </div>
-    </div>
-    <p class="hint">Los resultados se calculan con las fórmulas que ya tenía tu código.
-    Este diseño es una representación visual del flujo de cálculo, no un modelo de
-    aprendizaje automático entrenado ni una validación de la normativa tributaria.</p>
-    """,
-    unsafe_allow_html=True,
-)
+    label = str(pill_val)
+    pill_w = max(46, min(115, 14 + len(label) * 6.0))
+    parts.append(
+        f'<rect x="{x - pill_w/2}" y="{y - radius - 18}" width="{pill_w}" height="16" '
+        f'rx="8" fill="#fbbf24"/>'
+    )
+    parts.append(svg_text(x, y - radius - 7, label, 8.8, "#1e1b04", "800"))
+    if subtitle:
+        parts.append(svg_text(x, y + radius + 14, subtitle, 7.8, "#94a3b8", "500"))
+    return "".join(parts)
 
-st.markdown("---")
-st.caption(f"Red Neuronal Tributaria · Desarrollado por {DEVELOPER_NAME}")
+# Definición de nodos según el módulo activo
+if "IVA" in modulo:
+    col1_nodes = [
+        ("VENTAS|GRAVADAS", money(ventas_mes), "Base imponible ventas"),
+        ("COMPRAS|LOCALES/IMP", money(compras_mes), "Adquisiciones con IVA"),
+        ("TARIFA|APLICABLE", f"{tarifa_iva:g} %", "15% | 8% | 5% | 0%"),
+        ("RETENCIONES|RECIBIDAS", money(ret_iva), "Agentes de retención"),
+        ("9.° DÍGITO|DEL RUC", f"Dígito {noveno_digito}", "Calendario SRI"),
+    ]
+    col2_nodes = [
+        ("HECHO|GENERADOR", "Art. 61 LRTI", "Entrega o pago"),
+        ("SUJETOS|PASIVOS", "Art. 63 LRTI", "Percepción / Retención"),
