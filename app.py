@@ -278,13 +278,12 @@ def draw_node(x, y, title, pill_val, color, subtitle="", radius=27):
 
 # Definición de nodos según el módulo activo
 if "IVA" in modulo:
-    col1_nodes = (
-        ("VENTAS|GRAVADAS", money(ventas_mes), "Base imponible ventas"),
-        ("COMPRAS|LOCALES/IMP", money(compras_mes), "Adquisiciones con IVA"),
-        ("TARIFA|APLICABLE", f"{tarifa_iva:g} %", "15% | 8% | 5% | 0%"),
-        ("RETENCIONES|RECIBIDAS", money(ret_iva), "Agentes de retención"),
-        ("9.° DÍGITO|DEL RUC", f"Dígito {noveno_digito}", "Calendario SRI"),
-    )
-    col2_nodes = (
-        ("HECHO|GENERADOR", "Art. 61 LRTI", "Entrega o pago"),
-        ("SUJETOS|PASIVOS", "Art. 63 LRTI", "Percepción / Retención"),
+    n_col1_0 = ("VENTAS|GRAVADAS", money(ventas_mes), "Base imponible ventas")
+    n_col1_1 = ("COMPRAS|LOCALES/IMP", money(compras_mes), "Adquisiciones con IVA")
+    n_col1_2 = ("TARIFA|APLICABLE", f"{tarifa_iva:g} %", "15% | 8% | 5% | 0%")
+    n_col1_3 = ("RETENCIONES|RECIBIDAS", money(ret_iva), "Agentes de retención")
+    n_col1_4 = ("9.° DÍGITO|DEL RUC", f"Dígito {noveno_digito}", "Calendario SRI")
+    col1_nodes = (n_col1_0, n_col1_1, n_col1_2, n_col1_3, n_col1_4)
+
+    n_col2_0 = ("HECHO|GENERADOR", "Art. 61 LRTI", "Entrega o pago")
+    n_col2_1 = ("SUJETOS|PASIVOS", "Art. 63 LRTI", "Percepción / Retención")
