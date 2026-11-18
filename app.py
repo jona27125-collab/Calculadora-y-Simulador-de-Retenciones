@@ -119,10 +119,10 @@ st.markdown("""
 st.sidebar.markdown("## 🧠 Centro de Control LRTI")
 modulo = st.sidebar.radio(
     "Selecciona el impuesto a procesar en la red:",
-    [
+    (
         "🔵 Impuesto al Valor Agregado (IVA)",
         "🟣 Impuesto a la Renta (IR)",
-    ],
+    ),
 )
 
 st.sidebar.markdown("---")
@@ -131,12 +131,12 @@ if "IVA" in modulo:
     st.sidebar.markdown("### 📥 Parámetros IVA (Título II LRTI)")
     escenario_iva = st.sidebar.selectbox(
         "Cargar caso rápido:",
-        [
+        (
             "Tarifa General (15%)",
             "Servicios Turísticos Feriado (8%)",
             "Construcción Vivienda Social (5%)",
             "Bienes de Primera Necesidad (0%)",
-        ],
+        ),
     )
     tarifa_map = {
         "Tarifa General (15%)": 15.0,
@@ -152,10 +152,11 @@ if "IVA" in modulo:
     compras_mes = st.sidebar.number_input(
         "Compras con derecho a crédito (USD sin IVA)", min_value=0.0, value=7500.0, step=500.0
     )
+    tarifas_opciones = (15.0, 8.0, 5.0, 0.0)
     tarifa_iva = st.sidebar.selectbox(
         "Tarifa IVA vigente (Art. 65 LRTI)",
-        [15.0, 8.0, 5.0, 0.0],
-        index=[15.0, 8.0, 5.0, 0.0].index(tarifa_default),
+        tarifas_opciones,
+        index=tarifas_opciones.index(tarifa_default),
         format_func=lambda x: f"{x:g} %",
     )
     ret_iva = st.sidebar.number_input(
@@ -175,11 +176,11 @@ else:
     st.sidebar.markdown("### 📥 Parámetros Renta (Título I LRTI)")
     tipo_sujeto = st.sidebar.selectbox(
         "Sujeto Pasivo (Art. 4 LRTI):",
-        [
+        (
             "Sociedad (Tarifa General 25%)",
             "Persona Natural (Tabla Progresiva 0% - 37%)",
             "RIMPE Emprendedor (1% - 2%)",
-        ],
+        ),
     )
     ingresos_anuales = st.sidebar.number_input(
         "Ingresos gravados anuales (USD)", min_value=0.0, value=150000.0, step=5000.0
@@ -225,8 +226,7 @@ else:
         else:
             impuesto_causado = 23956 + (base_imponible - 107199) * 0.37
 
-        # Rebaja gastos personales (18% según cargas familiares)
-        limites_cargas = [5565.0, 7155.0, 8745.0, 11130.0, 13515.0, 15900.0]
+        limites_cargas = (5565.0, 7155.0, 8745.0, 11130.0, 13515.0, 15900.0)
         tope_cargas = limites_cargas[cargas_familiares]
         rebaja_gp = min(impuesto_causado, tope_cargas * 0.18)
         plazo_ir = "MARZO (P. Naturales)"
@@ -275,15 +275,16 @@ def draw_node(x, y, title, pill_val, color, subtitle="", radius=27):
         parts.append(svg_text(x, y + radius + 14, subtitle, 7.8, "#94a3b8", "500"))
     return "".join(parts)
 
+
 # Definición de nodos según el módulo activo
 if "IVA" in modulo:
-    col1_nodes = [
+    col1_nodes = (
         ("VENTAS|GRAVADAS", money(ventas_mes), "Base imponible ventas"),
         ("COMPRAS|LOCALES/IMP", money(compras_mes), "Adquisiciones con IVA"),
         ("TARIFA|APLICABLE", f"{tarifa_iva:g} %", "15% | 8% | 5% | 0%"),
         ("RETENCIONES|RECIBIDAS", money(ret_iva), "Agentes de retención"),
         ("9.° DÍGITO|DEL RUC", f"Dígito {noveno_digito}", "Calendario SRI"),
-    ]
-    col2_nodes = [
+    )
+    col2_nodes = (
         ("HECHO|GENERADOR", "Art. 61 LRTI", "Entrega o pago"),
         ("SUJETOS|PASIVOS", "Art. 63 LRTI", "Percepción / Retención"),
