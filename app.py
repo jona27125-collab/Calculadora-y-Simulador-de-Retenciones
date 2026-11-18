@@ -45,36 +45,6 @@ st.markdown("""
         margin-top: 6px;
         margin-bottom: 0;
     }
-    .author {
-        color: #cbd5e1;
-        text-align: right;
-        font-size: .85rem;
-        line-height: 1.5;
-    }
-    .top-rule {
-        height: 4px;
-        border-radius: 10px;
-        background: linear-gradient(90deg, #3b82f6, #8b5cf6, #10b981, #f59e0b);
-        margin: 16px 0 18px 0;
-    }
-    .info-card {
-        background: #131c31;
-        border: 1px solid rgba(148, 163, 184, .18);
-        border-radius: 12px;
-        padding: 16px;
-        height: 100%;
-    }
-    .info-card h4 {
-        color: #38bdf8;
-        margin-top: 0;
-        margin-bottom: 8px;
-        font-size: 1.05rem;
-    }
-    .info-card p, .info-card li {
-        color: #cbd5e1;
-        font-size: 0.9rem;
-        line-height: 1.45;
-    }
     .result-strip {
         display: grid;
         grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -205,26 +175,26 @@ else:
         plazo_ir = "ABRIL (Sociedades)"
     elif "Persona Natural" in tipo_sujeto:
         tarifa_ir_texto = "0% a 37% (Art. 36)"
-        if base_imponible <= 11902:
+        if base_imponible <= 12208:
             impuesto_causado = 0.0
-        elif base_imponible <= 15159:
-            impuesto_causado = (base_imponible - 11902) * 0.05
-        elif base_imponible <= 19682:
-            impuesto_causado = 163 + (base_imponible - 15159) * 0.10
-        elif base_imponible <= 26031:
-            impuesto_causado = 615 + (base_imponible - 19682) * 0.12
-        elif base_imponible <= 34255:
-            impuesto_causado = 1377 + (base_imponible - 26031) * 0.15
-        elif base_imponible <= 45407:
-            impuesto_causado = 2611 + (base_imponible - 34255) * 0.20
-        elif base_imponible <= 60450:
-            impuesto_causado = 4841 + (base_imponible - 45407) * 0.25
-        elif base_imponible <= 80605:
-            impuesto_causado = 8602 + (base_imponible - 60450) * 0.30
-        elif base_imponible <= 107199:
-            impuesto_causado = 14648 + (base_imponible - 80605) * 0.35
+        elif base_imponible <= 15549:
+            impuesto_causado = (base_imponible - 12208) * 0.05
+        elif base_imponible <= 20188:
+            impuesto_causado = 167 + (base_imponible - 15549) * 0.10
+        elif base_imponible <= 26700:
+            impuesto_causado = 631 + (base_imponible - 20188) * 0.12
+        elif base_imponible <= 35136:
+            impuesto_causado = 1412 + (base_imponible - 26700) * 0.15
+        elif base_imponible <= 46575:
+            impuesto_causado = 2678 + (base_imponible - 35136) * 0.20
+        elif base_imponible <= 62005:
+            impuesto_causado = 4965 + (base_imponible - 46575) * 0.25
+        elif base_imponible <= 82679:
+            impuesto_causado = 8823 + (base_imponible - 62005) * 0.30
+        elif base_imponible <= 109956:
+            impuesto_causado = 15025 + (base_imponible - 82679) * 0.35
         else:
-            impuesto_causado = 23956 + (base_imponible - 107199) * 0.37
+            impuesto_causado = 24572 + (base_imponible - 109956) * 0.37
 
         limites_cargas = [5565.0, 7155.0, 8745.0, 11130.0, 13515.0, 15900.0]
         tope_cargas = limites_cargas[cargas_familiares]
@@ -240,51 +210,56 @@ else:
     ir_pagar = max(0.0, impuesto_causado - rebaja_gp - ret_renta)
     saldo_favor_ir = abs(min(0.0, impuesto_causado - rebaja_gp - ret_renta))
 
-
 # ------------------------------------------------------------
-# FUNCIONES PARA CONSTRUIR EL SVG NEURONAL CON NÚCLEO LRTI
+# INTERFAZ PRINCIPAL Y RENDERIZADO DE MÉTRICAS
 # ------------------------------------------------------------
-def money(val):
-    return f"${val:,.2f}"
+st.markdown('<p class="main-title">🧠 Red Neuronal Tributaria - Núcleo LRTI</p>', unsafe_allow_html=True)
+st.markdown(f'<p class="sub-title">Simulador interactivo basado en la Ley Orgánica de Régimen Tributario Interno y normativas del SRI 2026 | Desarrollado por {DEVELOPER_NAME}</p>', unsafe_allow_html=True)
+st.markdown('<div style="height:4px; border-radius:10px; background:linear-gradient(90deg, #3b82f6, #8b5cf6, #10b981, #f59e0b); margin:16px 0 18px 0;"></div>', unsafe_allow_html=True)
 
-def svg_text(x, y, text, size=11, color="#eaf0ff", weight="600", anchor="middle"):
-    return (
-        f'<text x="{x}" y="{y}" text-anchor="{anchor}" '
-        f'font-family="Inter,Segoe UI,Arial,sans-serif" font-size="{size}" '
-        f'font-weight="{weight}" fill="{color}">{html.escape(str(text))}</text>'
-    )
-
-def draw_node(x, y, title, pill_val, color, subtitle="", radius=27):
-    parts = [
-        f'<circle cx="{x}" cy="{y}" r="{radius+6}" fill="{color}" opacity=".12"/>',
-        f'<circle cx="{x}" cy="{y}" r="{radius}" fill="#131e36" stroke="{color}" stroke-width="2.4"/>',
-    ]
-    lines = title.split("|")
-    start_y = y - (len(lines) - 1) * 5
-    for i, line in enumerate(lines):
-        parts.append(svg_text(x, start_y + i * 10 + 3, line, 8.3, "#ffffff", "800"))
-
-    label = str(pill_val)
-    pill_w = max(46, min(115, 14 + len(label) * 6.0))
-    parts.append(
-        f'<rect x="{x - pill_w/2}" y="{y - radius - 18}" width="{pill_w}" height="16" '
-        f'rx="8" fill="#fbbf24"/>'
-    )
-    parts.append(svg_text(x, y - radius - 7, label, 8.8, "#1e1b04", "800"))
-    if subtitle:
-        parts.append(svg_text(x, y + radius + 14, subtitle, 7.8, "#94a3b8", "500"))
-    return "".join(parts)
-
-
-# Definición de nodos según el módulo activo
 if "IVA" in modulo:
-    col1_nodes = [
-        ("VENTAS|GRAVADAS", money(ventas_mes), "Base imponible ventas"),
-        ("COMPRAS|LOCALES/IMP", money(compras_mes), "Adquisiciones con IVA"),
-        ("TARIFA|APLICABLE", f"{tarifa_iva:g} %", "15% | 8% | 5% | 0%"),
-        ("RETENCIONES|RECIBIDAS", money(ret_iva), "Agentes de retención"),
-        ("9.° DÍGITO|DEL RUC", f"Dígito {noveno_digito}", "Calendario SRI"),
-    ]
-    col2_nodes = [
-        ("HECHO|GENERADOR", "Art. 61 LRTI", "Entrega o pago"),
-        ("SUJETOS|PASIVOS", "Art. 63 LRTI", "Percepción / Retención"),
+    st.markdown("### 📊 Resultados Dinámicos - Impuesto al Valor Agregado (Formulario 104)")
+    st.markdown(f"""
+    <div class="result-strip">
+        <div class="result-box">
+            <div class="result-label">IVA Ventas (Débito)</div>
+            <div class="result-value">${iva_ventas:,.2f}</div>
+        </div>
+        <div class="result-box">
+            <div class="result-label">Crédito Tributario</div>
+            <div class="result-value">${credito_tributario:,.2f}</div>
+        </div>
+        <div class="result-box">
+            <div class="result-label">IVA a Pagar</div>
+            <div class="result-value" style="color: #38bdf8;">${iva_pagar:,.2f}</div>
+        </div>
+        <div class="result-box">
+            <div class="result-label">Vencimiento RUC (...{noveno_digito})</div>
+            <div class="result-value" style="color: #10b981;">Día {dia_vencimiento} del mes</div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+else:
+    st.markdown("### 📊 Resultados Dinámicos - Impuesto a la Renta (Formularios 101 / 102)")
+    st.markdown(f"""
+    <div class="result-strip">
+        <div class="result-box">
+            <div class="result-label">Base Imponible</div>
+            <div class="result-value">${base_imponible:,.2f}</div>
+        </div>
+        <div class="result-box">
+            <div class="result-label">Impuesto Causado</div>
+            <div class="result-value">${impuesto_causado:,.2f}</div>
+        </div>
+        <div class="result-box">
+            <div class="result-label">Impuesto a Pagar</div>
+            <div class="result-value" style="color: #38bdf8;">${ir_pagar:,.2f}</div>
+        </div>
+        <div class="result-box">
+            <div class="result-label">Plazo Declaración</div>
+            <div class="result-value" style="color: #f59e0b; font-size: 1.05rem;">{plazo_ir}</div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+st.markdown(f'<div class="footnote">Simulación fiscal en tiempo real calculada bajo el marco jurídico ecuatoriano vigente. Creado por {DEVELOPER_NAME}.</div>', unsafe_allow_html=True)
