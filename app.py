@@ -1,5 +1,6 @@
 import html
 import streamlit as st
+import streamlit.components.v1 as components
 
 # ------------------------------------------------------------
 # CONFIGURACIÓN DE LA PÁGINA
@@ -118,10 +119,10 @@ st.markdown("""
 st.sidebar.markdown("## 🧠 Centro de Control LRTI")
 modulo = st.sidebar.radio(
     "Selecciona el impuesto a procesar en la red:",
-    (
+    [
         "🔵 Impuesto al Valor Agregado (IVA)",
         "🟣 Impuesto a la Renta (IR)",
-    ),
+    ],
 )
 
 st.sidebar.markdown("---")
@@ -130,12 +131,12 @@ if "IVA" in modulo:
     st.sidebar.markdown("### 📥 Parámetros IVA (Título II LRTI)")
     escenario_iva = st.sidebar.selectbox(
         "Cargar caso rápido:",
-        (
+        [
             "Tarifa General (15%)",
             "Servicios Turísticos Feriado (8%)",
             "Construcción Vivienda Social (5%)",
             "Bienes de Primera Necesidad (0%)",
-        ),
+        ],
     )
     tarifa_map = {
         "Tarifa General (15%)": 15.0,
@@ -151,7 +152,7 @@ if "IVA" in modulo:
     compras_mes = st.sidebar.number_input(
         "Compras con derecho a crédito (USD sin IVA)", min_value=0.0, value=7500.0, step=500.0
     )
-    tarifas_opciones = (15.0, 8.0, 5.0, 0.0)
+    tarifas_opciones = [15.0, 8.0, 5.0, 0.0]
     tarifa_iva = st.sidebar.selectbox(
         "Tarifa IVA vigente (Art. 65 LRTI)",
         tarifas_opciones,
@@ -175,11 +176,11 @@ else:
     st.sidebar.markdown("### 📥 Parámetros Renta (Título I LRTI)")
     tipo_sujeto = st.sidebar.selectbox(
         "Sujeto Pasivo (Art. 4 LRTI):",
-        (
+        [
             "Sociedad (Tarifa General 25%)",
             "Persona Natural (Tabla Progresiva 0% - 37%)",
             "RIMPE Emprendedor (1% - 2%)",
-        ),
+        ],
     )
     ingresos_anuales = st.sidebar.number_input(
         "Ingresos gravados anuales (USD)", min_value=0.0, value=150000.0, step=5000.0
@@ -225,7 +226,7 @@ else:
         else:
             impuesto_causado = 23956 + (base_imponible - 107199) * 0.37
 
-        limites_cargas = (5565.0, 7155.0, 8745.0, 11130.0, 13515.0, 15900.0)
+        limites_cargas = [5565.0, 7155.0, 8745.0, 11130.0, 13515.0, 15900.0]
         tope_cargas = limites_cargas[cargas_familiares]
         rebaja_gp = min(impuesto_causado, tope_cargas * 0.18)
         plazo_ir = "MARZO (P. Naturales)"
@@ -277,12 +278,13 @@ def draw_node(x, y, title, pill_val, color, subtitle="", radius=27):
 
 # Definición de nodos según el módulo activo
 if "IVA" in modulo:
-    n_col1_0 = ("VENTAS|GRAVADAS", money(ventas_mes), "Base imponible ventas")
-    n_col1_1 = ("COMPRAS|LOCALES/IMP", money(compras_mes), "Adquisiciones con IVA")
-    n_col1_2 = ("TARIFA|APLICABLE", f"{tarifa_iva:g} %", "15% | 8% | 5% | 0%")
-    n_col1_3 = ("RETENCIONES|RECIBIDAS", money(ret_iva), "Agentes de retención")
-    n_col1_4 = ("9.° DÍGITO|DEL RUC", f"Dígito {noveno_digito}", "Calendario SRI")
-    col1_nodes = (n_col1_0, n_col1_1, n_col1_2, n_col1_3, n_col1_4)
-
-    n_col2_0 = ("HECHO|GENERADOR", "Art. 61 LRTI", "Entrega o pago")
-    n_col2_1 = ("SUJETOS|PASIVOS", "Art. 63 LRTI", "Percepción / Retención")
+    col1_nodes = [
+        ("VENTAS|GRAVADAS", money(ventas_mes), "Base imponible ventas"),
+        ("COMPRAS|LOCALES/IMP", money(compras_mes), "Adquisiciones con IVA"),
+        ("TARIFA|APLICABLE", f"{tarifa_iva:g} %", "15% | 8% | 5% | 0%"),
+        ("RETENCIONES|RECIBIDAS", money(ret_iva), "Agentes de retención"),
+        ("9.° DÍGITO|DEL RUC", f"Dígito {noveno_digito}", "Calendario SRI"),
+    ]
+    col2_nodes = [
+        ("HECHO|GENERADOR", "Art. 61 LRTI", "Entrega o pago"),
+        ("SUJETOS|PASIVOS", "Art. 63 LRTI", "Percepción / Retención"),
