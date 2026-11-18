@@ -125,184 +125,121 @@ renta_a_pagar = max(0.0, impuesto_causado_renta - renta_retenida)
 def esc(value):
     return html.escape(str(value), quote=True)
 
-nodes = [
-    # Rama IVA - lado izquierdo
-    ("iva_entrada", 150, 205, "DATOS IVA", money(ventas_mes), "#438cff",
-     "Entradas del IVA", "Ventas y compras del período, tarifa aplicable y retenciones recibidas."),
-    ("iva_ley", 390, 205, "LRTI · IVA", "Arts. 52–67", "#a96af5",
-     "Marco legal del IVA", "La LRTI regula el objeto, hecho generador, sujetos pasivos, base imponible, tarifas, crédito tributario y declaración del IVA."),
-    ("iva_calc", 630, 205, "CÁLCULO IVA", money(iva_en_ventas), "#12c8b5",
-     "Procesamiento del IVA", f"IVA generado: {money(iva_en_ventas)}. Crédito estimado: {money(credito_tributario)}. Retención estimada: {money(iva_retenido)}."),
-    ("iva_out", 870, 205, "RESULTADO IVA", money(iva_a_pagar), "#ff9b50",
-     "Resultado del IVA", f"IVA a pagar: {money(iva_a_pagar)}. Saldo a favor estimado: {money(iva_a_favor)}."),
-    # Rama IR - lado derecho
-    ("ir_entrada", 1530, 555, "DATOS IR", money(ingresos_anual), "#438cff",
-     "Entradas del Impuesto a la Renta", "Ingresos anuales y costos o gastos deducibles declarados para el ejercicio fiscal."),
-    ("ir_ley", 1290, 555, "LRTI · RENTA", "Arts. 1–10, 16+", "#a96af5",
-     "Marco legal del Impuesto a la Renta", "La LRTI define la renta, sujetos pasivos, ejercicio impositivo, deducciones, base imponible y tarifas aplicables."),
-    ("ir_calc", 1050, 555, "CÁLCULO IR", money(base_imponible_renta), "#12c8b5",
-     "Procesamiento del Impuesto a la Renta", f"Base imponible simplificada: {money(base_imponible_renta)}. Impuesto causado estimado: {money(impuesto_causado_renta)}."),
-    ("ir_out", 810, 555, "RESULTADO IR", money(renta_a_pagar), "#ff9b50",
-     "Resultado del Impuesto a la Renta", f"Impuesto a la renta estimado por pagar: {money(renta_a_pagar)}."),
-]
+# Distribución visual inspirada en la referencia: cuatro columnas de proceso,
+# dos recorridos (IVA e IR) y la LRTI como núcleo central de la red.
+W, H = 1400, 720
 
-# Posiciones adaptadas a un lienzo panorámico; la LRTI es el nodo central.
-W, H = 1680, 780
 def text_svg(x, y, value, size=13, color="#eaf0ff", weight=600):
     return (f'<text x="{x}" y="{y}" text-anchor="middle" '
             f'font-family="Inter,Segoe UI,Arial,sans-serif" font-size="{size}" '
             f'font-weight="{weight}" fill="{color}">{esc(value)}</text>')
 
-def circle_node(node_data):
-    node_id, x, y, title, value, color, heading, detail = node_data
+def node_svg(node_id, x, y, title, value, color, heading, detail):
     safe_heading, safe_detail = esc(heading), esc(detail)
-    lines = [
-        f'<g class="node" tabindex="0" role="button" aria-label="{safe_heading}" '
-        f'data-title="{safe_heading}" data-detail="{safe_detail}" data-node="{node_id}" '
-        f'style="cursor:pointer">',
-        f'<circle cx="{x}" cy="{y}" r="61" fill="{color}" opacity=".10" class="halo"/>',
-        f'<circle cx="{x}" cy="{y}" r="49" fill="#14223b" stroke="{color}" stroke-width="2.5"/>',
-        f'<circle cx="{x}" cy="{y}" r="39" fill="none" stroke="{color}" stroke-opacity=".28"/>',
-        text_svg(x, y-5, title, 11, "#ffffff", 800),
-        text_svg(x, y+15, value, 11, color, 800),
-        text_svg(x, y+78, heading, 12, "#cbd8f0", 700),
-        '<circle cx="0" cy="0" r="0" fill="none"/>',
-        '</g>',
-    ]
-    return "".join(lines)
+    return f'''
+    <g class="node" tabindex="0" role="button" aria-label="{safe_heading}"
+       data-title="{safe_heading}" data-detail="{safe_detail}" data-node="{node_id}" style="cursor:pointer">
+      <rect x="{x-39}" y="{y-83}" width="78" height="19" rx="9.5" fill="{color}" opacity=".96"/>
+      {text_svg(x, y-69, value, 10, "#071326", 850)}
+      <circle cx="{x}" cy="{y}" r="43" fill="{color}" opacity=".10" class="halo"/>
+      <circle cx="{x}" cy="{y}" r="33" fill="#101e35" stroke="{color}" stroke-width="2.2"/>
+      <circle cx="{x}" cy="{y}" r="25" fill="none" stroke="{color}" stroke-opacity=".25"/>
+      <circle cx="{x}" cy="{y}" r="3.5" fill="{color}"/>
+      {text_svg(x, y+12, title, 8.5, "#f4f7ff", 850)}
+      {text_svg(x, y+59, heading, 10, "#c7d5ed", 700)}
+    </g>'''
 
-svg = [f"""
+node_specs = [
+    ("iva_in", 145, 255, "VENTAS", money(ventas_mes), "#438cff", "Entrada IVA", "Ventas del mes antes de IVA, usadas como referencia para calcular el impuesto generado."),
+    ("iva_analysis", 500, 255, "TARIFA", f"{tipo_tarifa:g}%", "#b46cff", "Análisis IVA", "La tarifa seleccionada se aplica a la base imponible de las operaciones gravadas. La LRTI determina los casos de tarifa 0% y tarifas diferenciadas."),
+    ("iva_process", 855, 255, "IVA VENTAS", money(iva_en_ventas), "#12c8b5", "Procesamiento IVA", f"IVA generado estimado: {money(iva_en_ventas)}. Crédito tributario estimado: {money(credito_tributario)}."),
+    ("iva_result", 1210, 255, "A PAGAR", money(iva_a_pagar), "#ff9b50", "Resultado IVA", f"IVA estimado a pagar: {money(iva_a_pagar)}. Saldo a favor estimado: {money(iva_a_favor)}."),
+    ("ir_in", 145, 535, "INGRESOS", money(ingresos_anual), "#438cff", "Entrada IR", "Ingresos anuales y costos o gastos deducibles declarados para el ejercicio fiscal."),
+    ("ir_analysis", 500, 535, "BASE", money(base_imponible_renta), "#b46cff", "Análisis IR", "La base imponible se obtiene depurando los ingresos gravados con los costos, gastos y deducciones permitidos por la LRTI."),
+    ("ir_process", 855, 535, "IMPUESTO", money(impuesto_causado_renta), "#12c8b5", "Procesamiento IR", f"Impuesto causado estimado con tarifa referencial del 25%: {money(impuesto_causado_renta)}."),
+    ("ir_result", 1210, 535, "A PAGAR", money(renta_a_pagar), "#ff9b50", "Resultado IR", f"Impuesto a la Renta estimado por pagar: {money(renta_a_pagar)}."),
+]
+
+svg = [f'''
 <div id="neural-wrap" style="width:100%;overflow-x:auto;border:1px solid #233653;
      border-radius:22px;background:#0b1528;box-shadow:0 18px 55px rgba(0,0,0,.25)">
 <svg id="neural-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {W} {H}"
      style="display:block;width:100%;min-width:900px;height:auto" aria-label="Red neuronal tributaria interactiva">
 <defs>
-  <pattern id="grid" width="34" height="34" patternUnits="userSpaceOnUse">
-    <path d="M 34 0 L 0 0 0 34" fill="none" stroke="#263958" stroke-width="1" opacity=".55"/>
-  </pattern>
-  <filter id="glow"><feGaussianBlur stdDeviation="5" result="blur"/>
-    <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-  <linearGradient id="centerFill" x1="0" y1="0" x2="1" y2="1">
-    <stop offset="0" stop-color="#253d70"/><stop offset="1" stop-color="#172344"/>
-  </linearGradient>
+ <pattern id="grid" width="26" height="26" patternUnits="userSpaceOnUse">
+  <path d="M26 0H0V26" fill="none" stroke="#263958" stroke-width=".8" opacity=".62"/>
+ </pattern>
+ <filter id="glow"><feGaussianBlur stdDeviation="5" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+ <linearGradient id="core" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#283e72"/><stop offset="1" stop-color="#111d38"/></linearGradient>
 </defs>
 <rect width="{W}" height="{H}" rx="22" fill="#0b1528"/>
 <rect width="{W}" height="{H}" rx="22" fill="url(#grid)"/>
-"""]
+''']
 
-# Encabezados de las dos ramas.
-svg += [
-    text_svg(420, 55, "RAMA DEL IMPUESTO AL VALOR AGREGADO", 17, "#64a5ff", 850),
-    text_svg(1260, 55, "RAMA DEL IMPUESTO A LA RENTA", 17, "#64a5ff", 850),
-    '<path d="M80 78 H780" stroke="#438cff" stroke-opacity=".35" stroke-width="1.5"/>',
-    '<path d="M900 78 H1600" stroke="#438cff" stroke-opacity=".35" stroke-width="1.5"/>',
+for x, color, label, sub in [
+    (145, "#438cff", "ENTRADA", "Datos de entrada"),
+    (500, "#b46cff", "ANÁLISIS", "Clasificación tributaria"),
+    (855, "#12c8b5", "PROCESAMIENTO", "Operaciones y cálculos"),
+    (1210, "#ff9b50", "RESULTADOS", "Salidas del sistema"),
+]:
+    svg.append(f'<circle cx="{x-53}" cy="55" r="4.5" fill="{color}"/>')
+    svg.append(text_svg(x+2, 59, label, 12, color, 850))
+    svg.append(text_svg(x+2, 76, sub, 8, "#8093b5", 550))
+
+paths = [
+    (145,255,500,255,"#438cff"),(500,255,855,255,"#b46cff"),(855,255,1210,255,"#12c8b5"),
+    (145,535,500,535,"#438cff"),(500,535,855,535,"#b46cff"),(855,535,1210,535,"#12c8b5"),
+    (145,255,500,535,"#438cff"),(145,535,500,255,"#438cff"),
+    (500,255,855,535,"#b46cff"),(500,535,855,255,"#b46cff"),
+    (855,255,1210,535,"#12c8b5"),(855,535,1210,255,"#12c8b5"),
 ]
+for x1,y1,x2,y2,color in paths:
+    svg.append(f'<path d="M{x1} {y1} C{(x1+x2)/2} {y1}, {(x1+x2)/2} {y2}, {x2} {y2}" fill="none" stroke="{color}" stroke-width="1.15" opacity=".22"/>')
 
-# Rutas ramificadas desde LRTI a los dos impuestos.
-edges = [
-    (840, 390, 760, 245, "#438cff"),
-    (840, 390, 920, 535, "#a96af5"),
-    (150, 205, 390, 205, "#438cff"),
-    (390, 205, 630, 205, "#a96af5"),
-    (630, 205, 870, 205, "#12c8b5"),
-    (1530, 555, 1290, 555, "#438cff"),
-    (1290, 555, 1050, 555, "#a96af5"),
-    (1050, 555, 810, 555, "#12c8b5"),
-]
-for x1, y1, x2, y2, color in edges:
-    svg.append(
-        f'<path class="flow-line" d="M{x1},{y1} C{(x1+x2)/2},{y1} '
-        f'{(x1+x2)/2},{y2} {x2},{y2}" fill="none" stroke="{color}" '
-        'stroke-width="2.5" stroke-dasharray="8 8" opacity=".75"/>'
-    )
-
-# Ramificaciones secundarias desde el nodo central a cada etapa.
 svg += [
-    '<path d="M840 390 C700 390 700 205 870 205" fill="none" stroke="#438cff" stroke-width="1.6" opacity=".24"/>',
-    '<path d="M840 390 C980 390 980 555 810 555" fill="none" stroke="#a96af5" stroke-width="1.6" opacity=".24"/>',
+ '<path class="flow-line" d="M700 360 C650 320 590 270 535 255" fill="none" stroke="#438cff" stroke-width="2.5" stroke-dasharray="7 7"/>',
+ '<path class="flow-line" d="M700 405 C650 455 590 520 535 535" fill="none" stroke="#b46cff" stroke-width="2.5" stroke-dasharray="7 7"/>',
+ '<path d="M700 360 C570 170 340 165 178 235" fill="none" stroke="#438cff" stroke-width="1.2" opacity=".18"/>',
+ '<path d="M700 405 C570 610 340 620 178 555" fill="none" stroke="#b46cff" stroke-width="1.2" opacity=".18"/>',
+ '<g class="node central" tabindex="0" role="button" data-title="Ley Orgánica de Régimen Tributario Interno (LRTI)" data-detail="La LRTI es el núcleo normativo de esta red. De ella parten las reglas del Impuesto al Valor Agregado y del Impuesto a la Renta. Selecciona los nodos de cada rama para explorar sus etapas." style="cursor:pointer">',
+ '<circle cx="700" cy="382" r="91" fill="#8b5cf6" opacity=".13" filter="url(#glow)"/>',
+ '<circle cx="700" cy="382" r="67" fill="url(#core)" stroke="#a78bfa" stroke-width="2.7"/>',
+ '<circle cx="700" cy="382" r="55" fill="none" stroke="#a78bfa" stroke-opacity=".38"/>',
+ text_svg(700, 376, "LRTI", 28, "#ffffff", 900),
+ text_svg(700, 398, "LEY TRIBUTARIA", 9, "#c4b5fd", 850),
+ text_svg(700, 415, "ECUADOR · 2026", 8, "#aebddb", 650),
+ '</g>',
 ]
+for spec in node_specs:
+    svg.append(node_svg(*spec))
 
-# Nodo central LRTI.
-svg += [
-    '<g id="central-node" class="node central" tabindex="0" role="button" '
-    'data-title="Ley Orgánica de Régimen Tributario Interno (LRTI)" '
-    'data-detail="La LRTI es el marco legal que organiza las reglas del IVA y del Impuesto a la Renta. Selecciona una rama para explorar sus etapas." style="cursor:pointer">',
-    '<circle cx="840" cy="390" r="105" fill="#8b5cf6" opacity=".12" filter="url(#glow)"/>',
-    '<circle cx="840" cy="390" r="82" fill="url(#centerFill)" stroke="#b28aff" stroke-width="3"/>',
-    '<circle cx="840" cy="390" r="68" fill="none" stroke="#b28aff" stroke-opacity=".45" stroke-width="1.5"/>',
-    text_svg(840, 378, "LRTI", 29, "#ffffff", 900),
-    text_svg(840, 405, "LEY TRIBUTARIA", 11, "#c4b5fd", 800),
-    text_svg(840, 426, "ECUADOR · 2026", 10, "#aebddb", 650),
-    '</g>',
-]
-
-for nd in nodes:
-    svg.append(circle_node(nd))
-
-# Leyenda.
-svg += [
-    '<circle cx="560" cy="710" r="6" fill="#438cff"/>',
-    text_svg(620, 714, "ENTRADAS", 11, "#aebddb", 700),
-    '<circle cx="735" cy="710" r="6" fill="#a96af5"/>',
-    text_svg(795, 714, "MARCO LEGAL", 11, "#aebddb", 700),
-    '<circle cx="930" cy="710" r="6" fill="#12c8b5"/>',
-    text_svg(990, 714, "PROCESAMIENTO", 11, "#aebddb", 700),
-    '<circle cx="1165" cy="710" r="6" fill="#ff9b50"/>',
-    text_svg(1220, 714, "RESULTADOS", 11, "#aebddb", 700),
-    '</svg>',
-    """
-<div id="node-info" style="margin:0 18px 18px;padding:15px 18px;border-radius:13px;
-     background:#111f36;border:1px solid #2a3d5d;color:#dce7fb">
-  <div id="node-title" style="font-weight:800;color:#c4b5fd;margin-bottom:5px">
-    LEY ORGÁNICA DE RÉGIMEN TRIBUTARIO INTERNO
-  </div>
-  <div id="node-detail" style="font-size:14px;line-height:1.55;color:#b8c7e2">
-    Pulsa cualquier nodo de la red para conocer su función y su relación con el proceso tributario.
-  </div>
-</div>
-</div>
+for x,color,label in [(510,"#438cff","ENTRADAS"),(650,"#b46cff","ANÁLISIS"),(790,"#12c8b5","CÁLCULOS"),(930,"#ff9b50","SALIDAS")]:
+    svg.append(f'<circle cx="{x}" cy="674" r="4.5" fill="{color}"/>')
+    svg.append(text_svg(x+48,678,label,9,"#aebddb",700))
+svg += ['</svg>', '''
+<div id="node-info" style="margin:0 18px 18px;padding:13px 17px;border-radius:12px;
+ background:#111f36;border:1px solid #2a3d5d;color:#dce7fb">
+ <div id="node-title" style="font-weight:800;color:#c4b5fd;margin-bottom:4px">LEY ORGÁNICA DE RÉGIMEN TRIBUTARIO INTERNO</div>
+ <div id="node-detail" style="font-size:13px;line-height:1.5;color:#b8c7e2">Pulsa cualquier nodo para conocer su función y relación con el proceso tributario.</div>
+</div></div>
 <style>
-#neural-svg .node {outline:none}
-#neural-svg .node:hover circle:first-child,
-#neural-svg .node:focus circle:first-child {opacity:.28;filter:url(#glow)}
-#neural-svg .node.selected circle:nth-child(2) {stroke-width:4;filter:url(#glow)}
-#neural-svg .flow-line {animation:flow 5s linear infinite}
-@keyframes flow {to {stroke-dashoffset:-64}}
-@media (prefers-reduced-motion: reduce) {.flow-line {animation:none}}
+#neural-svg .node{outline:none}#neural-svg .node:hover .halo,#neural-svg .node:focus .halo{opacity:.3;filter:url(#glow)}
+#neural-svg .node.selected circle:nth-of-type(2){stroke-width:4;filter:url(#glow)}
+#neural-svg .flow-line{animation:flow 4.5s linear infinite}@keyframes flow{to{stroke-dashoffset:-56}}
+@media(prefers-reduced-motion:reduce){.flow-line{animation:none}}
 </style>
 <script>
-(function() {
-  const root = document.getElementById('neural-wrap');
-  if (!root) return;
-  const nodes = root.querySelectorAll('.node');
-  const title = root.querySelector('#node-title');
-  const detail = root.querySelector('#node-detail');
-  function activate(el) {
-    nodes.forEach(n => n.classList.remove('selected'));
-    el.classList.add('selected');
-    title.textContent = el.dataset.title || 'Nodo tributario';
-    detail.textContent = el.dataset.detail || '';
-  }
-  nodes.forEach(el => {
-    el.addEventListener('click', () => activate(el));
-    el.addEventListener('keydown', ev => {
-      if (ev.key === 'Enter' || ev.key === ' ') {
-        ev.preventDefault(); activate(el);
-      }
-    });
-  });
-})();
+(function(){const root=document.getElementById('neural-wrap');if(!root)return;
+ const ns=root.querySelectorAll('.node'),title=root.querySelector('#node-title'),detail=root.querySelector('#node-detail');
+ function activate(el){ns.forEach(n=>n.classList.remove('selected'));el.classList.add('selected');
+ title.textContent=el.dataset.title||'Nodo tributario';detail.textContent=el.dataset.detail||'';}
+ ns.forEach(el=>{el.addEventListener('click',()=>activate(el));el.addEventListener('keydown',e=>{
+ if(e.key==='Enter'||e.key===' '){e.preventDefault();activate(el);}});});})();
 </script>
-"""
-]
+''']
+components.html("".join(svg), height=760, scrolling=False)
 
-components.html("".join(svg), height=820, scrolling=False)
-
-st.markdown(
-    '<p class="note">Interacción: selecciona el nodo central LRTI o cualquier nodo de las ramas IVA e IR. '
-    'Las líneas animadas representan el flujo conceptual de la información.</p>',
-    unsafe_allow_html=True,
-)
+st.markdown('<p class="note">Selecciona los nodos para explorar la red. Las conexiones animadas representan el flujo conceptual desde la LRTI hacia el IVA y el Impuesto a la Renta.</p>', unsafe_allow_html=True)
 
 # ------------------------- CONTROLES DEBAJO DEL GRÁFICO -------------------------
 st.markdown('<div class="section-title">⚙️ Centro de control y datos de entrada</div>', unsafe_allow_html=True)
@@ -320,8 +257,8 @@ with col_iva:
         key="compras_mes", format="%.2f"
     )
     tipo_tarifa = st.selectbox(
-        "Tarifa IVA aplicable", [15.0, 5.0, 0.0],
-        key="tipo_tarifa", format_func=lambda x: f"{x:g}%"
+        "Tarifa IVA aplicable", [15.0, 8.0, 5.0, 0.0],
+        key="tipo_tarifa", format_func=lambda x: ("8% · turismo en feriados autorizados" if x == 8.0 else f"{x:g}%")
     )
     retenciones_recibidas = st.number_input(
         "Retenciones recibidas (USD)", min_value=0.0, step=50.0,
