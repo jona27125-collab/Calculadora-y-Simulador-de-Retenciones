@@ -204,7 +204,6 @@ else:
         plazo_ir = "ABRIL (Sociedades)"
     elif "Persona Natural" in tipo_sujeto:
         tarifa_ir_texto = "0% a 37% (Art. 36)"
-        # Cálculo simplificado de tabla progresiva referencial
         if base_imponible <= 11902:
             impuesto_causado = 0.0
         elif base_imponible <= 15159:
@@ -226,13 +225,14 @@ else:
         else:
             impuesto_causado = 23956 + (base_imponible - 107199) * 0.37
 
-        # Rebaja gastos personales (18% según cargas)
-        tope_cargas = [7, 9, 11, 14, 17, 20][cargas_familiares] * 795.0
+        # Rebaja gastos personales (18% según cargas familiares)
+        limites_cargas = [5565.0, 7155.0, 8745.0, 11130.0, 13515.0, 15900.0]
+        tope_cargas = limites_cargas[cargas_familiares]
         rebaja_gp = min(impuesto_causado, tope_cargas * 0.18)
         plazo_ir = "MARZO (P. Naturales)"
     else:
         tarifa_ir_texto = "1% - 2% RIMPE"
-        base_imponible = ingresos_anuales  # RIMPE grava ingresos brutos
+        base_imponible = ingresos_anuales
         impuesto_causado = ingresos_anuales * 0.015
         rebaja_gp = 0.0
         plazo_ir = "MARZO / ABRIL"
