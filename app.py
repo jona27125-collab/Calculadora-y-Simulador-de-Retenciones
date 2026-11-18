@@ -2,264 +2,387 @@ import html
 import streamlit as st
 import streamlit.components.v1 as components
 
-# ------------------------------------------------------------
-# CONFIGURACIÓN DE LA PÁGINA
-# ------------------------------------------------------------
 st.set_page_config(
-    page_title="Red Neuronal Tributaria - LRTI y SRI",
+    page_title="Red neuronal tributaria | IVA e Impuesto a la Renta",
     page_icon="🧠",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="collapsed",
 )
 
 DEVELOPER_NAME = "Jonathan Toasa"
 
-# ------------------------------------------------------------
-# ESTILOS CSS
-# ------------------------------------------------------------
+# ------------------------- ESTILOS -------------------------
 st.markdown("""
 <style>
-    .stApp {
-        background: #090e1c;
-        color: #e8eefc;
-    }
-    [data-testid="stSidebar"] {
-        background: #0f172a;
-        border-right: 1px solid rgba(148, 163, 184, .16);
-    }
-    [data-testid="stSidebar"] h1,
-    [data-testid="stSidebar"] h2,
-    [data-testid="stSidebar"] h3 {
-        color: #eaf0ff;
-    }
-    .main-title {
-        color: #f3f6ff;
-        font-size: clamp(1.55rem, 2.8vw, 2.3rem);
-        font-weight: 800;
-        line-height: 1.15;
-        margin: 0;
-    }
-    .sub-title {
-        color: #94a3b8;
-        font-size: 0.98rem;
-        margin-top: 6px;
-        margin-bottom: 0;
-    }
-    .result-strip {
-        display: grid;
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: 12px;
-        margin-top: 12px;
-        margin-bottom: 18px;
-    }
-    .result-box {
-        background: #131c31;
-        border: 1px solid rgba(148,163,184,.22);
-        border-radius: 11px;
-        padding: 14px;
-    }
-    .result-label {
-        color: #94a3b8;
-        font-size: .75rem;
-        text-transform: uppercase;
-        font-weight: 700;
-        letter-spacing: .5px;
-    }
-    .result-value {
-        color: #f8fafc;
-        font-size: 1.25rem;
-        font-weight: 800;
-        margin-top: 4px;
-    }
-    .footnote {
-        color: #64748b;
-        text-align: center;
-        font-size: .78rem;
-        margin-top: 22px;
-    }
-    @media (max-width: 750px) {
-        .result-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    }
+.stApp {
+    background: #080f1e;
+    color: #e8eefc;
+}
+.block-container {
+    max-width: 1500px;
+    padding-top: 1.4rem;
+    padding-bottom: 3rem;
+}
+.main-title {
+    color: #f4f7ff;
+    font-size: clamp(1.7rem, 3vw, 2.55rem);
+    font-weight: 850;
+    line-height: 1.15;
+    margin: 0;
+}
+.sub-title {
+    color: #9fb1d2;
+    font-size: 1rem;
+    margin: .55rem 0 1rem;
+}
+.section-title {
+    color: #f2f6ff;
+    font-size: 1.35rem;
+    font-weight: 800;
+    margin: 1.5rem 0 .3rem;
+}
+div[data-testid="stNumberInput"], div[data-testid="stSelectbox"] {
+    background: #111d33;
+    border: 1px solid rgba(148,163,184,.18);
+    border-radius: 12px;
+    padding: 10px 12px 2px;
+}
+.metric-card {
+    background: linear-gradient(145deg,#14233e,#101a2d);
+    border: 1px solid rgba(148,163,184,.18);
+    border-radius: 14px;
+    padding: 15px 17px;
+    min-height: 92px;
+}
+.metric-label {
+    color: #9fb1d2;
+    font-size: .76rem;
+    text-transform: uppercase;
+    font-weight: 750;
+    letter-spacing: .5px;
+}
+.metric-value {
+    color: #f8faff;
+    font-size: 1.35rem;
+    font-weight: 850;
+    margin-top: 5px;
+}
+.note {
+    color: #91a2c1;
+    font-size: .82rem;
+}
+hr { border-color: rgba(148,163,184,.18); }
 </style>
 """, unsafe_allow_html=True)
 
-# ------------------------------------------------------------
-# PANEL DE CONTROL INTERACTIVO (SIDEBAR)
-# ------------------------------------------------------------
-st.sidebar.markdown("## 🧠 Centro de Control LRTI")
-modulo = st.sidebar.radio(
-    "Selecciona el impuesto a procesar en la red:",
-    [
-        "🔵 Impuesto al Valor Agregado (IVA)",
-        "🟣 Impuesto a la Renta (IR)",
-    ],
+def money(value):
+    return f"${value:,.2f}"
+
+# ------------------------- ENCABEZADO -------------------------
+st.markdown('<p class="main-title">🧠 Red neuronal tributaria</p>', unsafe_allow_html=True)
+st.markdown(
+    '<p class="sub-title">Ley Orgánica de Régimen Tributario Interno (LRTI): '
+    'explora cómo sus disposiciones se ramifican hacia el IVA y el Impuesto a la Renta.</p>',
+    unsafe_allow_html=True,
 )
 
-st.sidebar.markdown("---")
+# ------------------------- DATOS INICIALES Y CÁLCULOS -------------------------
+# Los valores iniciales son únicamente demostrativos. Se pueden editar debajo del gráfico.
+if "ventas_mes" not in st.session_state:
+    st.session_state.ventas_mes = 10000.0
+if "compras_mes" not in st.session_state:
+    st.session_state.compras_mes = 6000.0
+if "tipo_tarifa" not in st.session_state:
+    st.session_state.tipo_tarifa = 15.0
+if "retenciones_recibidas" not in st.session_state:
+    st.session_state.retenciones_recibidas = 1290.0
+if "ingresos_anual" not in st.session_state:
+    st.session_state.ingresos_anual = 200000.0
+if "costos_anual" not in st.session_state:
+    st.session_state.costos_anual = 160000.0
 
-if "IVA" in modulo:
-    st.sidebar.markdown("### 📥 Parámetros IVA (Título II LRTI)")
-    escenario_iva = st.sidebar.selectbox(
-        "Cargar caso rápido:",
-        [
-            "Tarifa General (15%)",
-            "Servicios Turísticos Feriado (8%)",
-            "Construcción Vivienda Social (5%)",
-            "Bienes de Primera Necesidad (0%)",
-        ],
+ventas_mes = st.session_state.ventas_mes
+compras_mes = st.session_state.compras_mes
+tipo_tarifa = st.session_state.tipo_tarifa
+retenciones_recibidas = st.session_state.retenciones_recibidas
+ingresos_anual = st.session_state.ingresos_anual
+costos_anual = st.session_state.costos_anual
+
+iva_en_ventas = ventas_mes * (tipo_tarifa / 100.0)
+credito_tributario = compras_mes * (tipo_tarifa / 100.0)
+iva_retenido = retenciones_recibidas * 0.07
+iva_pagar_calc = iva_en_ventas - credito_tributario - iva_retenido
+iva_a_pagar = max(0.0, iva_pagar_calc)
+iva_a_favor = abs(min(0.0, iva_pagar_calc))
+
+base_imponible_renta = max(0.0, ingresos_anual - costos_anual)
+impuesto_causado_renta = base_imponible_renta * 0.25
+renta_retenida = retenciones_recibidas * 0.90
+renta_a_pagar = max(0.0, impuesto_causado_renta - renta_retenida)
+
+# ------------------------- RED NEURONAL INTERACTIVA -------------------------
+# Los nodos se pueden pulsar: el panel inferior del gráfico muestra su explicación.
+def esc(value):
+    return html.escape(str(value), quote=True)
+
+nodes = [
+    # Rama IVA - lado izquierdo
+    ("iva_entrada", 150, 205, "DATOS IVA", money(ventas_mes), "#438cff",
+     "Entradas del IVA", "Ventas y compras del período, tarifa aplicable y retenciones recibidas."),
+    ("iva_ley", 390, 205, "LRTI · IVA", "Arts. 52–67", "#a96af5",
+     "Marco legal del IVA", "La LRTI regula el objeto, hecho generador, sujetos pasivos, base imponible, tarifas, crédito tributario y declaración del IVA."),
+    ("iva_calc", 630, 205, "CÁLCULO IVA", money(iva_en_ventas), "#12c8b5",
+     "Procesamiento del IVA", f"IVA generado: {money(iva_en_ventas)}. Crédito estimado: {money(credito_tributario)}. Retención estimada: {money(iva_retenido)}."),
+    ("iva_out", 870, 205, "RESULTADO IVA", money(iva_a_pagar), "#ff9b50",
+     "Resultado del IVA", f"IVA a pagar: {money(iva_a_pagar)}. Saldo a favor estimado: {money(iva_a_favor)}."),
+    # Rama IR - lado derecho
+    ("ir_entrada", 1530, 555, "DATOS IR", money(ingresos_anual), "#438cff",
+     "Entradas del Impuesto a la Renta", "Ingresos anuales y costos o gastos deducibles declarados para el ejercicio fiscal."),
+    ("ir_ley", 1290, 555, "LRTI · RENTA", "Arts. 1–10, 16+", "#a96af5",
+     "Marco legal del Impuesto a la Renta", "La LRTI define la renta, sujetos pasivos, ejercicio impositivo, deducciones, base imponible y tarifas aplicables."),
+    ("ir_calc", 1050, 555, "CÁLCULO IR", money(base_imponible_renta), "#12c8b5",
+     "Procesamiento del Impuesto a la Renta", f"Base imponible simplificada: {money(base_imponible_renta)}. Impuesto causado estimado: {money(impuesto_causado_renta)}."),
+    ("ir_out", 810, 555, "RESULTADO IR", money(renta_a_pagar), "#ff9b50",
+     "Resultado del Impuesto a la Renta", f"Impuesto a la renta estimado por pagar: {money(renta_a_pagar)}."),
+]
+
+# Posiciones adaptadas a un lienzo panorámico; la LRTI es el nodo central.
+W, H = 1680, 780
+def text_svg(x, y, value, size=13, color="#eaf0ff", weight=600):
+    return (f'<text x="{x}" y="{y}" text-anchor="middle" '
+            f'font-family="Inter,Segoe UI,Arial,sans-serif" font-size="{size}" '
+            f'font-weight="{weight}" fill="{color}">{esc(value)}</text>')
+
+def circle_node(node_data):
+    node_id, x, y, title, value, color, heading, detail = node_data
+    safe_heading, safe_detail = esc(heading), esc(detail)
+    lines = [
+        f'<g class="node" tabindex="0" role="button" aria-label="{safe_heading}" '
+        f'data-title="{safe_heading}" data-detail="{safe_detail}" data-node="{node_id}" '
+        f'style="cursor:pointer">',
+        f'<circle cx="{x}" cy="{y}" r="61" fill="{color}" opacity=".10" class="halo"/>',
+        f'<circle cx="{x}" cy="{y}" r="49" fill="#14223b" stroke="{color}" stroke-width="2.5"/>',
+        f'<circle cx="{x}" cy="{y}" r="39" fill="none" stroke="{color}" stroke-opacity=".28"/>',
+        text_svg(x, y-5, title, 11, "#ffffff", 800),
+        text_svg(x, y+15, value, 11, color, 800),
+        text_svg(x, y+78, heading, 12, "#cbd8f0", 700),
+        '<circle cx="0" cy="0" r="0" fill="none"/>',
+        '</g>',
+    ]
+    return "".join(lines)
+
+svg = [f"""
+<div id="neural-wrap" style="width:100%;overflow-x:auto;border:1px solid #233653;
+     border-radius:22px;background:#0b1528;box-shadow:0 18px 55px rgba(0,0,0,.25)">
+<svg id="neural-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {W} {H}"
+     style="display:block;width:100%;min-width:900px;height:auto" aria-label="Red neuronal tributaria interactiva">
+<defs>
+  <pattern id="grid" width="34" height="34" patternUnits="userSpaceOnUse">
+    <path d="M 34 0 L 0 0 0 34" fill="none" stroke="#263958" stroke-width="1" opacity=".55"/>
+  </pattern>
+  <filter id="glow"><feGaussianBlur stdDeviation="5" result="blur"/>
+    <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  <linearGradient id="centerFill" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#253d70"/><stop offset="1" stop-color="#172344"/>
+  </linearGradient>
+</defs>
+<rect width="{W}" height="{H}" rx="22" fill="#0b1528"/>
+<rect width="{W}" height="{H}" rx="22" fill="url(#grid)"/>
+"""]
+
+# Encabezados de las dos ramas.
+svg += [
+    text_svg(420, 55, "RAMA DEL IMPUESTO AL VALOR AGREGADO", 17, "#64a5ff", 850),
+    text_svg(1260, 55, "RAMA DEL IMPUESTO A LA RENTA", 17, "#64a5ff", 850),
+    '<path d="M80 78 H780" stroke="#438cff" stroke-opacity=".35" stroke-width="1.5"/>',
+    '<path d="M900 78 H1600" stroke="#438cff" stroke-opacity=".35" stroke-width="1.5"/>',
+]
+
+# Rutas ramificadas desde LRTI a los dos impuestos.
+edges = [
+    (840, 390, 760, 245, "#438cff"),
+    (840, 390, 920, 535, "#a96af5"),
+    (150, 205, 390, 205, "#438cff"),
+    (390, 205, 630, 205, "#a96af5"),
+    (630, 205, 870, 205, "#12c8b5"),
+    (1530, 555, 1290, 555, "#438cff"),
+    (1290, 555, 1050, 555, "#a96af5"),
+    (1050, 555, 810, 555, "#12c8b5"),
+]
+for x1, y1, x2, y2, color in edges:
+    svg.append(
+        f'<path class="flow-line" d="M{x1},{y1} C{(x1+x2)/2},{y1} '
+        f'{(x1+x2)/2},{y2} {x2},{y2}" fill="none" stroke="{color}" '
+        'stroke-width="2.5" stroke-dasharray="8 8" opacity=".75"/>'
     )
-    tarifa_map = {
-        "Tarifa General (15%)": 15.0,
-        "Servicios Turísticos Feriado (8%)": 8.0,
-        "Construcción Vivienda Social (5%)": 5.0,
-        "Bienes de Primera Necesidad (0%)": 0.0,
-    }
-    tarifa_default = tarifa_map[escenario_iva]
 
-    ventas_mes = st.sidebar.number_input(
-        "Ventas gravadas del mes (USD sin IVA)", min_value=0.0, value=12000.0, step=500.0
+# Ramificaciones secundarias desde el nodo central a cada etapa.
+svg += [
+    '<path d="M840 390 C700 390 700 205 870 205" fill="none" stroke="#438cff" stroke-width="1.6" opacity=".24"/>',
+    '<path d="M840 390 C980 390 980 555 810 555" fill="none" stroke="#a96af5" stroke-width="1.6" opacity=".24"/>',
+]
+
+# Nodo central LRTI.
+svg += [
+    '<g id="central-node" class="node central" tabindex="0" role="button" '
+    'data-title="Ley Orgánica de Régimen Tributario Interno (LRTI)" '
+    'data-detail="La LRTI es el marco legal que organiza las reglas del IVA y del Impuesto a la Renta. Selecciona una rama para explorar sus etapas." style="cursor:pointer">',
+    '<circle cx="840" cy="390" r="105" fill="#8b5cf6" opacity=".12" filter="url(#glow)"/>',
+    '<circle cx="840" cy="390" r="82" fill="url(#centerFill)" stroke="#b28aff" stroke-width="3"/>',
+    '<circle cx="840" cy="390" r="68" fill="none" stroke="#b28aff" stroke-opacity=".45" stroke-width="1.5"/>',
+    text_svg(840, 378, "LRTI", 29, "#ffffff", 900),
+    text_svg(840, 405, "LEY TRIBUTARIA", 11, "#c4b5fd", 800),
+    text_svg(840, 426, "ECUADOR · 2026", 10, "#aebddb", 650),
+    '</g>',
+]
+
+for nd in nodes:
+    svg.append(circle_node(nd))
+
+# Leyenda.
+svg += [
+    '<circle cx="560" cy="710" r="6" fill="#438cff"/>',
+    text_svg(620, 714, "ENTRADAS", 11, "#aebddb", 700),
+    '<circle cx="735" cy="710" r="6" fill="#a96af5"/>',
+    text_svg(795, 714, "MARCO LEGAL", 11, "#aebddb", 700),
+    '<circle cx="930" cy="710" r="6" fill="#12c8b5"/>',
+    text_svg(990, 714, "PROCESAMIENTO", 11, "#aebddb", 700),
+    '<circle cx="1165" cy="710" r="6" fill="#ff9b50"/>',
+    text_svg(1220, 714, "RESULTADOS", 11, "#aebddb", 700),
+    '</svg>',
+    """
+<div id="node-info" style="margin:0 18px 18px;padding:15px 18px;border-radius:13px;
+     background:#111f36;border:1px solid #2a3d5d;color:#dce7fb">
+  <div id="node-title" style="font-weight:800;color:#c4b5fd;margin-bottom:5px">
+    LEY ORGÁNICA DE RÉGIMEN TRIBUTARIO INTERNO
+  </div>
+  <div id="node-detail" style="font-size:14px;line-height:1.55;color:#b8c7e2">
+    Pulsa cualquier nodo de la red para conocer su función y su relación con el proceso tributario.
+  </div>
+</div>
+</div>
+<style>
+#neural-svg .node {outline:none}
+#neural-svg .node:hover circle:first-child,
+#neural-svg .node:focus circle:first-child {opacity:.28;filter:url(#glow)}
+#neural-svg .node.selected circle:nth-child(2) {stroke-width:4;filter:url(#glow)}
+#neural-svg .flow-line {animation:flow 5s linear infinite}
+@keyframes flow {to {stroke-dashoffset:-64}}
+@media (prefers-reduced-motion: reduce) {.flow-line {animation:none}}
+</style>
+<script>
+(function() {
+  const root = document.getElementById('neural-wrap');
+  if (!root) return;
+  const nodes = root.querySelectorAll('.node');
+  const title = root.querySelector('#node-title');
+  const detail = root.querySelector('#node-detail');
+  function activate(el) {
+    nodes.forEach(n => n.classList.remove('selected'));
+    el.classList.add('selected');
+    title.textContent = el.dataset.title || 'Nodo tributario';
+    detail.textContent = el.dataset.detail || '';
+  }
+  nodes.forEach(el => {
+    el.addEventListener('click', () => activate(el));
+    el.addEventListener('keydown', ev => {
+      if (ev.key === 'Enter' || ev.key === ' ') {
+        ev.preventDefault(); activate(el);
+      }
+    });
+  });
+})();
+</script>
+"""
+]
+
+components.html("".join(svg), height=820, scrolling=False)
+
+st.markdown(
+    '<p class="note">Interacción: selecciona el nodo central LRTI o cualquier nodo de las ramas IVA e IR. '
+    'Las líneas animadas representan el flujo conceptual de la información.</p>',
+    unsafe_allow_html=True,
+)
+
+# ------------------------- CONTROLES DEBAJO DEL GRÁFICO -------------------------
+st.markdown('<div class="section-title">⚙️ Centro de control y datos de entrada</div>', unsafe_allow_html=True)
+st.markdown("Modifica los valores para actualizar los nodos y los resultados de la red.")
+
+col_iva, col_ir = st.columns(2, gap="large")
+with col_iva:
+    st.markdown("#### 🔵 1. Datos del IVA")
+    ventas_mes = st.number_input(
+        "Ventas del mes (USD sin IVA)", min_value=0.0, step=500.0,
+        key="ventas_mes", format="%.2f"
     )
-    compras_mes = st.sidebar.number_input(
-        "Compras con derecho a crédito (USD sin IVA)", min_value=0.0, value=7500.0, step=500.0
+    compras_mes = st.number_input(
+        "Compras del mes (USD sin IVA)", min_value=0.0, step=500.0,
+        key="compras_mes", format="%.2f"
     )
-    tarifas_opciones = [15.0, 8.0, 5.0, 0.0]
-    tarifa_iva = st.sidebar.selectbox(
-        "Tarifa IVA vigente (Art. 65 LRTI)",
-        tarifas_opciones,
-        index=tarifas_opciones.index(tarifa_default),
-        format_func=lambda x: f"{x:g} %",
+    tipo_tarifa = st.selectbox(
+        "Tarifa IVA aplicable", [15.0, 5.0, 0.0],
+        key="tipo_tarifa", format_func=lambda x: f"{x:g}%"
     )
-    ret_iva = st.sidebar.number_input(
-        "Retenciones de IVA recibidas (USD)", min_value=0.0, value=360.0, step=50.0
-    )
-    noveno_digito = st.sidebar.slider("9.° dígito del RUC (Plazo SRI)", 1, 9, 4)
-
-    # Cálculos IVA según LRTI
-    iva_ventas = ventas_mes * (tarifa_iva / 100.0)
-    credito_tributario = compras_mes * (tarifa_iva / 100.0)
-    saldo_iva = iva_ventas - credito_tributario - ret_iva
-    iva_pagar = max(0.0, saldo_iva)
-    credito_favor = abs(min(0.0, saldo_iva))
-    dia_vencimiento = 10 + (noveno_digito - 1) * 2
-
-else:
-    st.sidebar.markdown("### 📥 Parámetros Renta (Título I LRTI)")
-    tipo_sujeto = st.sidebar.selectbox(
-        "Sujeto Pasivo (Art. 4 LRTI):",
-        [
-            "Sociedad (Tarifa General 25%)",
-            "Persona Natural (Tabla Progresiva 0% - 37%)",
-            "RIMPE Emprendedor (1% - 2%)",
-        ],
-    )
-    ingresos_anuales = st.sidebar.number_input(
-        "Ingresos gravados anuales (USD)", min_value=0.0, value=150000.0, step=5000.0
-    )
-    gastos_deducibles = st.sidebar.number_input(
-        "Costos y gastos deducibles (Art. 10 LRTI)", min_value=0.0, value=95000.0, step=5000.0
-    )
-    ret_renta = st.sidebar.number_input(
-        "Retenciones en la fuente recibidas (USD)", min_value=0.0, value=2500.0, step=100.0
-    )
-    cargas_familiares = st.sidebar.slider(
-        "Cargas familiares (Persona Natural)", 0, 5, 0
+    retenciones_recibidas = st.number_input(
+        "Retenciones recibidas (USD)", min_value=0.0, step=50.0,
+        key="retenciones_recibidas", format="%.2f"
     )
 
-    # Cálculos Impuesto a la Renta según LRTI
-    base_imponible = max(0.0, ingresos_anuales - gastos_deducibles)
+with col_ir:
+    st.markdown("#### 🟣 2. Datos del Impuesto a la Renta")
+    ingresos_anual = st.number_input(
+        "Ingresos del año (USD)", min_value=0.0, step=5000.0,
+        key="ingresos_anual", format="%.2f"
+    )
+    costos_anual = st.number_input(
+        "Costos y gastos deducibles (USD)", min_value=0.0, step=5000.0,
+        key="costos_anual", format="%.2f"
+    )
+    st.info("En este prototipo, la tarifa de sociedades del 25% se utiliza como supuesto simplificado para estimar el IR. No sustituye la tabla progresiva de personas naturales ni los cálculos especiales del RIMPE.")
 
-    if "Sociedad" in tipo_sujeto:
-        tarifa_ir_texto = "25 % (Art. 37)"
-        impuesto_causado = base_imponible * 0.25
-        rebaja_gp = 0.0
-        plazo_ir = "ABRIL (Sociedades)"
-    elif "Persona Natural" in tipo_sujeto:
-        tarifa_ir_texto = "0% a 37% (Art. 36)"
-        if base_imponible <= 12208:
-            impuesto_causado = 0.0
-        elif base_imponible <= 15549:
-            impuesto_causado = (base_imponible - 12208) * 0.05
-        elif base_imponible <= 20188:
-            impuesto_causado = 167 + (base_imponible - 15549) * 0.10
-        elif base_imponible <= 26700:
-            impuesto_causado = 631 + (base_imponible - 20188) * 0.12
-        elif base_imponible <= 35136:
-            impuesto_causado = 1412 + (base_imponible - 26700) * 0.15
-        elif base_imponible <= 46575:
-            impuesto_causado = 2678 + (base_imponible - 35136) * 0.20
-        elif base_imponible <= 62005:
-            impuesto_causado = 4965 + (base_imponible - 46575) * 0.25
-        elif base_imponible <= 82679:
-            impuesto_causado = 8823 + (base_imponible - 62005) * 0.30
-        elif base_imponible <= 109956:
-            impuesto_causado = 15025 + (base_imponible - 82679) * 0.35
-        else:
-            impuesto_causado = 24572 + (base_imponible - 109956) * 0.37
+# Recalcular con los valores actuales.
+iva_en_ventas = ventas_mes * (tipo_tarifa / 100.0)
+credito_tributario = compras_mes * (tipo_tarifa / 100.0)
+iva_retenido = retenciones_recibidas * 0.07
+iva_pagar_calc = iva_en_ventas - credito_tributario - iva_retenido
+iva_a_pagar = max(0.0, iva_pagar_calc)
+iva_a_favor = abs(min(0.0, iva_pagar_calc))
+base_imponible_renta = max(0.0, ingresos_anual - costos_anual)
+impuesto_causado_renta = base_imponible_renta * 0.25
+renta_retenida = retenciones_recibidas * 0.90
+renta_a_pagar = max(0.0, impuesto_causado_renta - renta_retenida)
 
-        limites_cargas = [5565.0, 7155.0, 8745.0, 11130.0, 13515.0, 15900.0]
-        tope_cargas = limites_cargas[cargas_familiares]
-        rebaja_gp = min(impuesto_causado, tope_cargas * 0.18)
-        plazo_ir = "MARZO (P. Naturales)"
-    else:
-        tarifa_ir_texto = "1% - 2% RIMPE"
-        base_imponible = ingresos_anuales
-        impuesto_causado = ingresos_anuales * 0.015
-        rebaja_gp = 0.0
-        plazo_ir = "MARZO / ABRIL"
+# Botón para forzar una nueva renderización del gráfico con los valores actualizados.
+if st.button("🔄 Actualizar red neuronal", type="primary", use_container_width=True):
+    st.rerun()
 
-    ir_pagar = max(0.0, impuesto_causado - rebaja_gp - ret_renta)
-    saldo_favor_ir = abs(min(0.0, impuesto_causado - rebaja_gp - ret_renta))
+# ------------------------- RESULTADOS -------------------------
+st.markdown('<div class="section-title">📊 Resultados del procesamiento</div>', unsafe_allow_html=True)
+metrics = [
+    ("IVA generado", money(iva_en_ventas)),
+    ("Crédito tributario estimado", money(credito_tributario)),
+    ("IVA a pagar", money(iva_a_pagar)),
+    ("Saldo IVA a favor", money(iva_a_favor)),
+    ("Base imponible de renta", money(base_imponible_renta)),
+    ("Impuesto a la renta causado", money(impuesto_causado_renta)),
+    ("Retenciones de renta estimadas", money(renta_retenida)),
+    ("Impuesto a la renta a pagar", money(renta_a_pagar)),
+]
+metric_cols = st.columns(4)
+for i, (label, value) in enumerate(metrics):
+    with metric_cols[i % 4]:
+        st.markdown(
+            f'<div class="metric-card"><div class="metric-label">{esc(label)}</div>'
+            f'<div class="metric-value">{esc(value)}</div></div>',
+            unsafe_allow_html=True
+        )
 
-# ------------------------------------------------------------
-# INTERFAZ PRINCIPAL Y RENDERIZADO DE MÉTRICAS
-# ------------------------------------------------------------
-st.markdown('<p class="main-title">🧠 Red Neuronal Tributaria - Núcleo LRTI</p>', unsafe_allow_html=True)
-st.markdown(f'<p class="sub-title">Simulador interactivo basado en la Ley Orgánica de Régimen Tributario Interno y normativas del SRI 2026 | Desarrollado por {DEVELOPER_NAME}</p>', unsafe_allow_html=True)
-st.markdown('<div style="height:4px; border-radius:10px; background:linear-gradient(90deg, #3b82f6, #8b5cf6, #10b981, #f59e0b); margin:16px 0 18px 0;"></div>', unsafe_allow_html=True)
-
-if "IVA" in modulo:
-    st.markdown("### 📊 Resultados Dinámicos - Impuesto al Valor Agregado (Formulario 104)")
-    st.markdown(f"""
-    <div class="result-strip">
-        <div class="result-box">
-            <div class="result-label">IVA Ventas (Débito)</div>
-            <div class="result-value">${iva_ventas:,.2f}</div>
-        </div>
-        <div class="result-box">
-            <div class="result-label">Crédito Tributario</div>
-            <div class="result-value">${credito_tributario:,.2f}</div>
-        </div>
-        <div class="result-box">
-            <div class="result-label">IVA a Pagar</div>
-            <div class="result-value" style="color: #38bdf8;">${iva_pagar:,.2f}</div>
-        </div>
-        <div class="result-box">
-            <div class="result-label">Vencimiento RUC (...{noveno_digito})</div>
-            <div class="result-value" style="color: #10b981;">Día {dia_vencimiento} del mes</div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-else:
-    st.markdown("### 📊 Resultados Dinámicos - Impuesto a la Renta (Formularios 101 / 102)")
-    st.markdown(f"""
-    <div class="result-strip">
-        <div class="result-box">
-            <div class="result-label">Base Imponible</div>
-            <div class="result-value">${base_imponible:,.2f}</div>
-        </div>
-        <div class="result-box">
-            <div class="result-label">Impuesto Causado</div>
-            <div class="result-value">${impuesto_causado:,.2f}</div>
-        </div>
-        <div class="result-box">
-            <div class="result-label">Impuesto a Pagar</div>
-            <div class="result-value" style="color: #38bdf8;">${ir_pagar:,.2f}</div>
-        </div>
-        <div class="result-box">
-            <div class="result-label">Plazo Declaración</div>
-            <div class="result-value" style="color: #f59e0b; font-size: 1.05rem;">{plazo_ir}</div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-
-st.markdown(f'<div class="footnote">Simulación fiscal en tiempo real calculada bajo el marco jurídico ecuatoriano vigente. Creado por {DEVELOPER_NAME}.</div>', unsafe_allow_html=True)
+st.markdown("---")
+st.markdown(
+    '<p class="note">Modelo educativo. Los cálculos conservan las fórmulas simplificadas del archivo original '
+    '(incluidos los porcentajes de retención parametrizados). Antes de utilizarlo para una declaración real, '
+    'deben validarse las tarifas, porcentajes de retención, crédito tributario, régimen y tabla aplicable '
+    'según la normativa vigente del SRI.</p>',
+    unsafe_allow_html=True,
+)
+st.caption(f"Desarrollado por {DEVELOPER_NAME} · Ecuador · Modelo académico")
